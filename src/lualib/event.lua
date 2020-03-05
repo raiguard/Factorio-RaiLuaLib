@@ -9,7 +9,7 @@ local table_deepcopy = table.deepcopy
 local table_insert = table.insert
 
 -- module
-local event = {}
+local self = {}
 -- holds registered events
 local event_registry = {}
 
@@ -42,7 +42,7 @@ local function dispatch_event(e)
       -- check if any userdata has gone invalid since last iteration
       for _,v in pairs(e) do
         if type(v) == 'table' and v.__self and not v.valid then
-          return event
+          return self
         end
       end
     end
@@ -88,7 +88,7 @@ local function dispatch_event(e)
       game.force_crc()
     end
   end
-  return event
+  return self
 end
 -- pass-through handlers for special events
 local bootstrap_handlers = {
@@ -108,7 +108,7 @@ local bootstrap_handlers = {
 -- EVENTS
 
 -- registers a handler to run when the event is called
-function event.register(id, handler, options)
+function self.register(id, handler, options)
   options = options or {}
   -- we must do this here as well since this can get called before on_init
   if not global.__lualib then global.__lualib = {event={}} end
@@ -139,7 +139,7 @@ function event.register(id, handler, options)
           if not options.suppress_logging then
             log('Tried to re-register conditional event \''..name..'\' for player '..player_index..', skipping!')
           end
-          return event
+          return self
         end
       end
       -- if we're here, we want to do everything for the conditional event but not register the handler
@@ -155,7 +155,7 @@ function event.register(id, handler, options)
     if player_index then
       table_insert(t.players, player_index)
     end
-    if skip_registration then return event end
+    if skip_registration then return self end
   end
   -- register handler
   if type(id) ~= 'table' then id = {id} end
@@ -199,11 +199,11 @@ function event.register(id, handler, options)
       table_insert(registry, data)
     end
   end
-  return event -- function call chaining
+  return self -- function call chaining
 end
 
 -- deregisters a handler from the given event
-function event.deregister(id, handler, name, player_index)
+function self.deregister(id, handler, name, player_index)
   local global_data = global.__lualib.event
   -- remove from conditional event registry if needed
   if name then
@@ -222,7 +222,7 @@ function event.deregister(id, handler, name, player_index)
         global_data[name] = nil
       else
         -- don't do anything else
-        return event
+        return self
       end
     else
       error('Tried to deregister a conditional event whose data does not exist')
@@ -235,7 +235,7 @@ function event.deregister(id, handler, name, player_index)
     -- error checking
     if not registry or #registry == 0 then
       log('Tried to deregister an unregistered event of id: '..n)
-      return event
+      return self
     end
     -- remove the handler from the events tables
     for i,t in ipairs(registry) do
@@ -254,28 +254,28 @@ function event.deregister(id, handler, name, player_index)
       end
     end
   end
-  return event
+  return self
 end
 
 -- raises an event as if it were actually called
-function event.raise(id, table)
+function self.raise(id, table)
   script.raise_event(id, table)
-  return event
+  return self
 end
 
 -- set or remove event filters
-function event.set_filters(id, filters)
+function self.set_filters(id, filters)
   if type(id) ~= 'table' then id = {id} end
   for _,n in pairs(id) do
     script.set_event_filter(n, filters)
   end
-  return event
+  return self
 end
 
 -- holds custom event IDs
 local custom_id_registry = {}
 -- generates or retrieves a custom event ID
-function event.generate_id(name)
+function self.generate_id(name)
   if not custom_id_registry[name] then
     custom_id_registry[name] = script.generate_event_name()
   end
@@ -283,7 +283,7 @@ function event.generate_id(name)
 end
 
 -- updates the GUI filters for the given conditional event
-function event.update_gui_filters(name, player_index, filters)
+function self.update_gui_filters(name, player_index, filters)
   local event_data = global.__lualib.event[name]
   if not event_data then error('Cannot update GUI filters for a non-existent event!') end
   event_data.gui_filters[player_index] = filters
@@ -293,26 +293,26 @@ end
 -- SHORTCUT FUNCTIONS
 
 -- bootstrap events
-function event.on_init(handler, options)
-  return event.register('on_init', handler, options)
+function self.on_init(handler, options)
+  return self.register('on_init', handler, options)
 end
 
-function event.on_load(handler, options)
-  return event.register('on_load', handler, options)
+function self.on_load(handler, options)
+  return self.register('on_load', handler, options)
 end
 
-function event.on_configuration_changed(handler, options)
-  return event.register('on_configuration_changed', handler, options)
+function self.on_configuration_changed(handler, options)
+  return self.register('on_configuration_changed', handler, options)
 end
 
-function event.on_nth_tick(nthTick, handler, options)
-  return event.register(-nthTick, handler, options)
+function self.on_nth_tick(nthTick, handler, options)
+  return self.register(-nthTick, handler, options)
 end
 
 -- defines.events
 for n,id in pairs(defines.events) do
-  event[n] = function(handler, options)
-    event.register(id, handler, options)
+  self[n] = function(handler, options)
+    self.register(id, handler, options)
   end
 end
 
@@ -320,19 +320,19 @@ end
 -- CONDITIONAL EVENTS
 
 -- re-registers conditional handlers if they're in the registry
-function event.load_conditional_handlers(data)
+function self.load_conditional_handlers(data)
   local global_data = global.__lualib.event
   for name, handler in pairs(data) do
     local registry = global_data[name]
     if registry then
-      event.register(registry.id, handler, {name=name})
+      self.register(registry.id, handler, {name=name})
     end
   end
-  return event
+  return self
 end
 
 -- returns true if the conditional event is registered
-function event.is_registered(name, player_index)
+function self.is_registered(name, player_index)
   local registry = global.__lualib.event[name]
   if registry then
     if player_index then
@@ -349,13 +349,13 @@ function event.is_registered(name, player_index)
 end
 
 -- gets the event IDs from the conditional registry so you don't have to provide them
-function event.deregister_conditional(handler, name, player_index)
+function self.deregister_conditional(handler, name, player_index)
   local con_registry = global.__lualib.event[name]
   if con_registry then
-    event.deregister(con_registry.id, handler, name, player_index)
+    self.deregister(con_registry.id, handler, name, player_index)
   end
 end
 
-function event.get_registry() return event_registry end
+function self.get_registry() return event_registry end
 
-return event
+return self

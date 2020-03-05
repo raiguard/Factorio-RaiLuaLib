@@ -14,10 +14,10 @@ local table_sort = table.sort
 
 -- -----------------------------------------------------------------------------
 
-local translation = {}
-translation.start_event = event.generate_id('translation_start')
-translation.finish_event = event.generate_id('translation_finish')
-translation.canceled_event = event.generate_id('translation_canceled')
+local self = {}
+self.start_event = event.generate_id('translation_start')
+self.finish_event = event.generate_id('translation_finish')
+self.canceled_event = event.generate_id('translation_canceled')
 
 -- converts a localised string into a format readable by the API
 -- basically just spits out the table in string form
@@ -134,7 +134,7 @@ local function sort_translated_string(e)
           __translation.active_translations_count = __translation.active_translations_count - 1
           player_data.active_translations_count = player_data.active_translations_count - 1
           -- raise finished event with the output tables
-          event.raise(translation.finish_event, {player_index=e.player_index, dictionary_name=dictionary_name, lookup=data.lookup,
+          event.raise(self.finish_event, {player_index=e.player_index, dictionary_name=dictionary_name, lookup=data.lookup,
             lookup_lower=data.lookup_lower, sorted_translations=data.sorted_translations, translations=data.translations})
           -- remove from active translations table
           player_data.active_translations[dictionary_name] = nil
@@ -159,10 +159,10 @@ local function sort_translated_string(e)
   end
 end
 
-translation.serialise_localised_string = serialise_localised_string
+self.serialise_localised_string = serialise_localised_string
 
 -- begin translating strings
-function translation.start(player, dictionary_name, data, options)
+function self.start(player, dictionary_name, data, options)
   options = options or {}
   local __translation = global.__lualib.translation
   local player_data = __translation.players[player.index]
@@ -170,7 +170,7 @@ function translation.start(player, dictionary_name, data, options)
   -- reset if the translation is already running
   if player_data.active_translations[dictionary_name] then
     log('Cancelling and restarting translation of '..dictionary_name..' for '..player.name)
-    translation.cancel(player, dictionary_name)
+    self.cancel(player, dictionary_name)
   end
 
   -- create local references
@@ -225,14 +225,14 @@ function translation.start(player, dictionary_name, data, options)
   __translation.active_translations_count = __translation.active_translations_count + 1
   player_data.active_translations_count = player_data.active_translations_count + 1
   -- raise translation start event
-  event.raise(translation.start_event, {player_index=player.index, dictionary_name=dictionary_name})
+  event.raise(self.start_event, {player_index=player.index, dictionary_name=dictionary_name})
   -- register events, if needed
   event.on_tick(translate_batch, {name='translation_translate_batch', player_index=player.index, skip_validation=true, suppress_logging=true})
   event.on_string_translated(sort_translated_string, {name='translation_sort_result', player_index=player.index, skip_validation=true, suppress_logging=true})
 end
 
 -- cancel a translation
-function translation.cancel(player, dictionary_name)
+function self.cancel(player, dictionary_name)
   local __translation = global.__lualib.translation
   local player_data = __translation.players[player.index]
   local translation_data = player_data.active_translations[dictionary_name]
@@ -254,7 +254,7 @@ function translation.cancel(player, dictionary_name)
   __translation.active_translations_count = __translation.active_translations_count - 1
   player_data.active_translations_count = player_data.active_translations_count - 1
   -- raise canceled event with the output tables
-  event.raise(translation.canceled_event, {player_index=player.index, dictionary_name=dictionary_name})
+  event.raise(self.canceled_event, {player_index=player.index, dictionary_name=dictionary_name})
   -- remove from active translations table
   player_data.active_translations[dictionary_name] = nil
 
@@ -274,20 +274,20 @@ function translation.cancel(player, dictionary_name)
 end
 
 -- cancels all translations for a player
-function translation.cancel_all_for_player(player)
+function self.cancel_all_for_player(player)
   local __translation = global.__lualib.translation
   local player_translations = __translation.players[player.index].active_translations
   for name,_ in pairs(player_translations) do
-    translation.cancel(player, name)
+    self.cancel(player, name)
   end
 end
 
 -- cancels ALL translations for this mod
-function translation.cancel_all()
+function self.cancel_all()
   for i,t in pairs(global.__lualib.translation.players) do
     local player = game.get_player(i)
     for name,_ in pairs(t.active_translations) do
-      translation.cancel(player, name)
+      self.cancel(player, name)
     end
   end
 end
@@ -318,7 +318,7 @@ local function setup_remote()
       end
     )
   end
-  translation.retranslate_all_event = remote.call('railualib_translation', 'retranslate_all_event')
+  self.retranslate_all_event = remote.call('railualib_translation', 'retranslate_all_event')
 end
 
 -- set up global
@@ -348,7 +348,7 @@ end)
 event.on_player_joined_game(function(e)
   -- if we load a singleplayer game and become someone else, we must first cancel any ongoing translations that they were doing
   if global.__lualib.translation.players[e.player_index] then
-    translation.cancel_all_for_player(game.get_player(e.player_index))
+    self.cancel_all_for_player(game.get_player(e.player_index))
   end
   setup_player(e.player_index)
 end, {insert_at_front=true}) -- guarantee that this will be run first to avoid crashes later on
@@ -357,8 +357,8 @@ end, {insert_at_front=true}) -- guarantee that this will be run first to avoid c
 event.on_player_left_game(function(e)
   local player_translation = global.__lualib.translation.players[e.player_index]
   if player_translation.active_translations_count > 0 then
-    translation.cancel_all_for_player(game.get_player(e.player_index))
+    self.cancel_all_for_player(game.get_player(e.player_index))
   end
 end)
 
-return translation
+return self
