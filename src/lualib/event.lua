@@ -224,8 +224,6 @@ function self.deregister(id, handler, name, player_index)
         -- don't do anything else
         return self
       end
-    else
-      error('Tried to deregister a conditional event whose data does not exist')
     end
   end
   -- deregister handler
