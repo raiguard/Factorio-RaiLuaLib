@@ -2,15 +2,6 @@
 -- RAILUALIB MIGRATIONS MODULE
 -- Migration handling for different versions.
 
--- Copyright (c) 2020 raiguard - https://github.com/raiguard
--- Permission is hereby granted, free of charge, to those obtaining this software or a portion thereof, to copy the contents of this software into their own
--- Factorio mod, and modify it to suit their needs. This is permissed under the condition that this notice and copyright information, as well as the link to
--- the documentation, are not omitted, and that any changes from the original are documented.
-
--- DOCUMENTATION: https://github.com/raiguard/Factorio-SmallMods/wiki/Migrations-Module-Documentation
-
--- -------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 -- object
 local migrations = {}
 
