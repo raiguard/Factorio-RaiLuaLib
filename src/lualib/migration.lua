@@ -26,7 +26,6 @@ function self.run(old, migrations_table, ...)
   for v,f in pairs(migrations_table) do
     if migrate or self.compare_versions(old, v) then
       migrate = true
-      log('Applying migration: '..v)
       f()
     end
   end
