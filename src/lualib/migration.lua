@@ -1,5 +1,5 @@
 -- -------------------------------------------------------------------------------------------------------------------------------------------------------------
--- RAILUALIB MIGRATIONS MODULE
+-- RAILUALIB MIGRATION MODULE
 -- Migration handling for different versions.
 
 -- object
