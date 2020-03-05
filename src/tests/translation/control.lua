@@ -1,8 +1,8 @@
 -- -------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- TRANSLATION LIBRARY CONTROL TESTS
 
-local event = require('lualib/event')
-local translation = require('lualib/translation')
+local event = require('lualib.event')
+local translation = require('lualib.translation')
 
 local mod_gui = require('mod-gui')
 

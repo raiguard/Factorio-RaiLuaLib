@@ -3,8 +3,8 @@
 -- Requests and organizes translations for localised strings
 
 -- dependencies
-local event = require('lualib/event')
-local util = require('__core__/lualib/util')
+local event = require('lualib.event')
+local util = require('__core__.lualib.util')
 
 -- locals
 local math_floor = math.floor

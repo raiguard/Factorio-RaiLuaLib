@@ -3,8 +3,8 @@
 -- GUI templating and event handling
 
 -- dependencies
-local event = require('lualib/event')
-local util = require('__core__/lualib/util')
+local event = require('lualib.event')
+local util = require('__core__.lualib.util')
 
 -- locals
 local global_data

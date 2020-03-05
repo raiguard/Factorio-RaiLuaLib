@@ -2,7 +2,7 @@
 -- RAILUALIB EVENT MODULE
 -- Multi-handler registration, conditional event handling, and GUI event filtering.
 
-local util = require('__core__/lualib/util')
+local util = require('__core__.lualib.util')
 
 -- locals
 local table_deepcopy = table.deepcopy
