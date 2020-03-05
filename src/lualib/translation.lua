@@ -12,9 +12,10 @@ local string_gsub = string.gsub
 local string_lower = string.lower
 local table_sort = table.sort
 
--- -----------------------------------------------------------------------------
-
+-- object
 local self = {}
+
+-- internal events
 self.start_event = event.generate_id('translation_start')
 self.finish_event = event.generate_id('translation_finish')
 self.canceled_event = event.generate_id('translation_canceled')
