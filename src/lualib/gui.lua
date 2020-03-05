@@ -3,7 +3,7 @@
 -- GUI templating and event handling
 
 -- dependencies
-local event = require('lualib.event')
+local event = require('__RaiLuaLib__.lualib.event')
 local util = require('__core__.lualib.util')
 
 -- locals
@@ -33,17 +33,27 @@ local function get_subtable(s, t)
   return o
 end
 
+local function get_event_name(gui_name, handlers_path, event_name)
+  return 'gui.'..gui_name..'.'..handlers_path..'.'..event_name
+end
+
 local function register_handlers(gui_name, handlers_path, options)
   local handlers_t = get_subtable(gui_name..'.'..handlers_path, handlers)
   for n,func in pairs(handlers_t) do
     local t = table.deepcopy(options)
-    t.name = 'gui.'..gui_name..'.'..handlers_path..'.'..n
-    -- add to global table
-    if not global_data[gui_name] then global_data[gui_name] = {} end
-    if not global_data[gui_name][t.player_index] then global_data[gui_name][t.player_index] = {} end
-    global_data[gui_name][t.player_index][t.name] = true
-    if defines.events[n] then n = defines.events[n] end
-    event.register(n, func, t)
+    t.name = get_event_name(gui_name, handlers_path, n)
+    -- check if the event has already been registered
+    if event.is_registered(t.name, t.player_index) then
+      -- append the GUI filters with our new element
+      event.update_gui_filters(t.name, t.player_index, t.gui_filters, true)
+    else
+      -- actually register it
+      if not global_data[gui_name] then global_data[gui_name] = {} end
+      if not global_data[gui_name][t.player_index] then global_data[gui_name][t.player_index] = {} end
+      global_data[gui_name][t.player_index][t.name] = true
+      if defines.events[n] then n = defines.events[n] end
+      event.register(n, func, t)
+    end
   end
 end
 
@@ -63,7 +73,7 @@ local function deregister_handlers(gui_name, handlers_path, player_index, gui_ev
 end
 
 -- recursively load a GUI template
-local function recursive_load(parent, t, output, name, player_index)
+local function recursive_load(parent, t, output, build_data, name, player_index)
   -- load template(s)
   if t.template then
     local template = t.template
@@ -139,13 +149,13 @@ local function recursive_load(parent, t, output, name, player_index)
     local children = t.children
     if children then
       for i=1,#children do
-        output = recursive_load(elem, children[i], output, name, player_index)
+        output = recursive_load(elem, children[i], output, build_data, name, player_index)
       end
     end
   else
     local tab, content
-    output, tab = recursive_load(parent, t.tab, output, name, player_index)
-    output, content = recursive_load(parent, t.content, output, name, player_index)
+    output, tab = recursive_load(parent, t.tab, output, build_data, name, player_index)
+    output, content = recursive_load(parent, t.content, output, build_data, name, player_index)
     parent.add_tab(tab, content)
   end
   return output, elem
@@ -193,7 +203,7 @@ function self.build(parent, ...)
     error('Invalid arguments for gui.build!')
   end
   build_data = {}
-  return recursive_load(parent, template, {}, name, player_index)
+  return recursive_load(parent, template, {}, {}, name, player_index)
 end
 
 -- deregisters all handlers for the given GUI
@@ -256,6 +266,7 @@ function self.get_handler(path)
   return get_subtable(path, handlers)
 end
 
+self.get_event_name = get_event_name
 self.register_handlers = register_handlers
 self.deregister_handlers = deregister_handlers
 

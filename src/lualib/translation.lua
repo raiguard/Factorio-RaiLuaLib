@@ -3,7 +3,7 @@
 -- Requests and organizes translations for localised strings
 
 -- dependencies
-local event = require('lualib.event')
+local event = require('__RaiLuaLib__.lualib.event')
 local util = require('__core__.lualib.util')
 
 -- locals

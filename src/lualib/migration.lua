@@ -21,23 +21,23 @@ function self.compare_versions(v1, v2)
 end
 
 -- run migrations
-function self.run(old, migrations_table, ...)
+function self.run(old, migrations, ...)
   local migrate = false
-  for v,f in pairs(migrations_table) do
+  for v,f in pairs(migrations) do
     if migrate or self.compare_versions(old, v) then
       migrate = true
-      f()
+      f(...)
     end
   end
 end
 
 -- handle version migrations in on_configuration_changed
-function self.on_config_changed(e, migrations_table, ...)
+function self.on_config_changed(e, migrations, ...)
   local changes = e.mod_changes[script.mod_name]
   if changes then
     local old = changes.old_version
     if old then
-      self.run(old, migrations_table, ...)
+      self.run(old, migrations, ...)
     else
       return false -- don't do generic migrations, because we just initialized
     end
