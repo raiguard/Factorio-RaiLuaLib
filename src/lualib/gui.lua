@@ -103,15 +103,16 @@ local function recursive_load(parent, t, output, build_data, name, player_index)
         t.save_as = t.handlers
       end
       -- recursively create tables as needed
-      local out = {}
-      local prev = out
+      local prev = output
       local nav
       local keys = string_split(t.save_as, '%.')
       local num_keys = #keys
       for i=1,num_keys do
         local key = keys[i]
-        nav = out[key]
-        if not nav then
+        nav = prev[key]
+        if nav then
+          prev = nav
+        else
           if i < num_keys then
             prev[key] = {}
             prev = prev[key]
@@ -120,7 +121,6 @@ local function recursive_load(parent, t, output, build_data, name, player_index)
           end
         end
       end
-      output = table_merge{output, out}
     end
     -- register handlers
     if t.handlers then
