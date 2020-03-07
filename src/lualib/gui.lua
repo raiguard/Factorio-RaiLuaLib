@@ -106,7 +106,6 @@ local function recursive_load(parent, t, output, build_data, name, player_index)
       local prev = output
       local prev_key
       local nav
-      
       for key in string_gmatch(t.save_as, "([^%.]+)") do
         prev = prev_key and prev[prev_key] or prev
         nav = prev[key]
