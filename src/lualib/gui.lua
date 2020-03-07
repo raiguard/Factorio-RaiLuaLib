@@ -4,16 +4,12 @@
 
 -- dependencies
 local event = require('__RaiLuaLib__.lualib.event')
-local util = require('__core__.lualib.util')
 
 -- locals
 local global_data
 local string_find = string.find
 local string_gsub = string.gsub
-local string_split = util.split
-local table_deepcopy = table.deepcopy
-local table_insert = table.insert
-local table_merge = util.merge
+local string_gmatch = string.gmatch
 
 -- settings
 local handlers = {}
@@ -27,7 +23,7 @@ local self = {}
 
 local function get_subtable(s, t)
   local o = t
-  for _,key in pairs(string_split(s, '%.')) do
+  for key in string_gmatch(s, "([^%.]+)") do
     o = o[key]
   end
   return o
@@ -76,7 +72,11 @@ end
 local function recursive_load(parent, t, output, build_data, name, player_index)
   -- load template
   if t.template then
-    t = table_merge{get_subtable(t.template, templates), t}
+    -- use a custom simple merge function to save performance
+    local template = get_subtable(t.template, templates)
+    for k,v in pairs(template) do
+      t[k] = v
+    end
   end
   local elem
   -- skip all of this if it's a tab-and-content
@@ -104,23 +104,20 @@ local function recursive_load(parent, t, output, build_data, name, player_index)
       end
       -- recursively create tables as needed
       local prev = output
+      local prev_key
       local nav
-      local keys = string_split(t.save_as, '%.')
-      local num_keys = #keys
-      for i=1,num_keys do
-        local key = keys[i]
+      
+      for key in string_gmatch(t.save_as, "([^%.]+)") do
+        prev = prev_key and prev[prev_key] or prev
         nav = prev[key]
         if nav then
           prev = nav
         else
-          if i < num_keys then
-            prev[key] = {}
-            prev = prev[key]
-          else
-            prev[key] = elem
-          end
+          prev[key] = {}
+          prev_key = key
         end
       end
+      prev[prev_key] = elem
     end
     -- register handlers
     if t.handlers then
