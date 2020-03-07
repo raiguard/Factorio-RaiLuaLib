@@ -35,8 +35,8 @@ end
 
 local function register_handlers(gui_name, handlers_path, options)
   local handlers_t = get_subtable(gui_name..'.'..handlers_path, handlers)
+  local t = table.deepcopy(options)
   for n,func in pairs(handlers_t) do
-    local t = table.deepcopy(options)
     t.name = get_event_name(gui_name, handlers_path, n)
     -- check if the event has already been registered
     if event.is_registered(t.name, t.player_index) then
