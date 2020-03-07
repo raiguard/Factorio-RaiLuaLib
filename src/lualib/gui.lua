@@ -74,33 +74,18 @@ end
 
 -- recursively load a GUI template
 local function recursive_load(parent, t, output, build_data, name, player_index)
-  -- load template(s)
+  -- load template
   if t.template then
-    local template = t.template
-    if type(template) == 'string' then
-      template = {template}
-    end
-    for i=1,#template do
-      t = util.merge{get_subtable(template[i], templates), t}
-    end
+    t = table_merge{get_subtable(t.template, templates), t}
   end
   local elem
   -- skip all of this if it's a tab-and-content
   if t.type ~= 'tab-and-content' then
-    -- format element table
-    local elem_t = table_deepcopy(t)
-    local style = elem_t.style
-    local iterate_style = false
-    if style and type(style) == 'table' then
-      elem_t.style = style.name
-      iterate_style = true
-    end
-    elem_t.children = nil
     -- create element
-    elem = parent.add(elem_t)
-    -- set runtime styles
-    if iterate_style then
-      for k,v in pairs(t.style) do
+    elem = parent.add(t)
+    -- apply style modifications
+    if t.style_mods then
+      for k,v in pairs(t.style_mods) do
         if k ~= 'name' then
           elem.style[k] = v
         end
@@ -152,7 +137,7 @@ local function recursive_load(parent, t, output, build_data, name, player_index)
         output = recursive_load(elem, children[i], output, build_data, name, player_index)
       end
     end
-  else
+  else -- tab-and-content
     local tab, content
     output, tab = recursive_load(parent, t.tab, output, build_data, name, player_index)
     output, content = recursive_load(parent, t.content, output, build_data, name, player_index)
@@ -190,20 +175,12 @@ end)
 -- OBJECT
 
 -- name and player_index are only required if we're registering events
-function self.build(parent, ...)
-  local arg = {...}
-  local template, name, player_index
-  if #arg == 1 then
-    template = arg[1]
-  elseif #arg == 3 then
-    name = arg[1]
-    player_index = arg[2]
-    template = arg[3]
-  else
-    error('Invalid arguments for gui.build!')
+function self.build(parent, templates, name, player_index)
+  local output = {}
+  for i=1,#templates do
+    output = recursive_load(parent, templates[i], output, {}, name, player_index)
   end
-  build_data = {}
-  return recursive_load(parent, template, {}, {}, name, player_index)
+  return output
 end
 
 -- deregisters all handlers for the given GUI

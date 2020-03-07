@@ -4,8 +4,8 @@ local mod_gui = require('mod-gui')
 
 gui.add_templates{
   pushers = {
-    horizontal = {type='empty-widget', name='pusher', style={horizontally_stretchable=true}},
-    vertical = {type='empty-widget', name='pusher', style={vertically_stretchable=true}}
+    horizontal = {type='empty-widget', name='pusher', style_mods={horizontally_stretchable=true}},
+    vertical = {type='empty-widget', name='pusher', style_mods={vertically_stretchable=true}}
   }
 }
 gui.add_handlers('demo', {
@@ -39,32 +39,45 @@ event.on_gui_click(function(e)
     gui.deregister_all('demo', e.player_index)
     window.destroy()
   else
-    local data = gui.build(frame_flow, 'demo', e.player_index,
-      {type='frame', name='demo_window', style='dialog_frame', direction='vertical', children={
-        -- checkboxes
-        {type='flow', name='checkboxes_flow', direction='horizontal', children={
-          {type='checkbox', name='autoclear', caption='Auto-clear', state=true, handlers='auto_clear_checkbox', save_as='checkboxes.auto_clear'},
-          {template='pushers.horizontal'},
-          {type='checkbox', name='cardinals', caption='Cardinals only', state=true, handlers='cardinals_checkbox', save_as='checkboxes.cardinals.cardinals'}
-        }},
-        -- grid type switch
-        {type='flow', name='switch_flow', style={vertical_align='center'}, direction='horizontal', children={
-          {type='label', name='label', caption='Grid type:'},
-          {template='pushers.horizontal'},
-          {type='switch', name='switch', left_label_caption='Increment', right_label_caption='Split', state='left', handlers='grid_type_switch', save_as=true}
-        }},
-        -- divisor label
-        {type='flow', name='divisor_label_flow', style={horizontal_align='center', horizontally_stretchable=true}, children={
-          {type='label', name='label', style='caption_label', caption='Number of tiles per subgrid', save_as='grid_type_label'},
-        }},
-        -- divisor slider and textfield
-        {type='flow', name='divisor_flow', style={horizontal_spacing=8, vertical_align='center'}, direction='horizontal', children={
-          {type='slider', name='slider', style={name='notched_slider', horizontally_stretchable=true}, minimum_value=4, maximum_value=12, value_step=1, value=5,
-            discrete_slider=true, discrete_values=true, handlers='divisor_slider', save_as=true},
-          {type='textfield', name='textfield', style={width=50, horizontal_align='center'}, numeric=true, lose_focus_on_confirm=true, text=5,
-            handlers='divisor_textfield', save_as=true}
+    local profiler = game.create_profiler()
+    profiler.stop()
+    for i=1,100 do
+      profiler.restart()
+      local data = gui.build(frame_flow, {
+        {type='frame', name='demo_window', style='dialog_frame', direction='vertical', save_as='window', children={
+          -- checkboxes
+          {type='flow', name='checkboxes_flow', direction='horizontal', children={
+            {type='checkbox', name='autoclear', caption='Auto-clear', state=true, handlers='auto_clear_checkbox', save_as='checkboxes.auto_clear'},
+            {template='pushers.horizontal'},
+            {type='checkbox', name='cardinals', caption='Cardinals only', state=true, handlers='cardinals_checkbox', save_as='checkboxes.cardinals.cardinals'}
+          }},
+          -- grid type switch
+          {type='flow', name='switch_flow', style_mods={vertical_align='center'}, direction='horizontal', children={
+            {type='label', name='label', caption='Grid type:'},
+            {template='pushers.horizontal'},
+            {type='switch', name='switch', left_label_caption='Increment', right_label_caption='Split', state='left', handlers='grid_type_switch', save_as=true}
+          }},
+          -- divisor label
+          {type='flow', name='divisor_label_flow', style_mods={horizontal_align='center', horizontally_stretchable=true}, children={
+            {type='label', name='label', style='caption_label', caption='Number of tiles per subgrid', save_as='grid_type_label'},
+          }},
+          -- divisor slider and textfield
+          {type='flow', name='divisor_flow', style_mods={horizontal_spacing=8, vertical_align='center'}, direction='horizontal', children={
+            {type='slider', name='slider', style='notched_slider', style_mods={horizontally_stretchable=true}, minimum_value=4, maximum_value=12,
+              value_step=1, value=5, discrete_slider=true, discrete_values=true, handlers='divisor_slider', save_as=true},
+            {type='textfield', name='textfield', style_mods={width=50, horizontal_align='center'}, numeric=true, lose_focus_on_confirm=true, text=5,
+              handlers='divisor_textfield', save_as=true}
+          }}
         }}
-      }})
-    game.print(serpent.block(data))
+      }, 'demo', e.player_index)
+      profiler.stop()
+      -- reset
+      if i ~= 100 then
+        gui.deregister_all('demo', e.player_index)
+        data.window.destroy()
+      end
+    end
+    profiler.divide(100)
+    game.print(profiler)
   end
 end, {gui_filters='gui_module_mod_gui_button'})
