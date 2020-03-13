@@ -284,12 +284,21 @@ end
 
 -- holds custom event IDs
 local custom_id_registry = {}
+
 -- generates or retrieves a custom event ID
-function self.generate_id(name)
+function self.get_id(name)
   if not custom_id_registry[name] then
     custom_id_registry[name] = script.generate_event_name()
   end
   return custom_id_registry[name]
+end
+
+-- saves a custom event ID
+function self.save_id(name, id)
+  if custom_id_registry[name] then
+    log('Overwriting entry in custom event registry: '..name)
+  end
+  custom_id_registry[name] = id
 end
 
 -- updates the GUI filters for the given conditional event
