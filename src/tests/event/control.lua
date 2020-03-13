@@ -1,7 +1,7 @@
 -- -------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- TEST EVENTS
 
-local event = require('lualib.event')
+local event = require('__RaiLuaLib__.lualib.event')
 local mod_gui = require('mod-gui')
 
 -- can also use event.register('on_init', function) if so desired

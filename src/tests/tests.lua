@@ -1,6 +1,6 @@
 return
 {
-  -- 'event',
-  -- 'gui',
+  'event',
+  'gui',
   -- 'translation',
 }
