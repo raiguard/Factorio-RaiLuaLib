@@ -161,7 +161,7 @@ event.register(
 -- places fire at the player's feet
 local function place_fire(e)
   -- use the registered_players table that is passed with conditional events
-  for _,i in pairs(e.registered_players) do
+  for name,i in pairs(e.registered_players) do
     local player = game.players[i]
     player.surface.create_entity{
       name = 'fire-flame',
@@ -188,8 +188,8 @@ end)
 -- pass the handler in on_load to be re-registered if needed
 event.on_load(function()
   event.load_conditional_handlers{
-    place_fire_at_feet = place_fire,
-    change_daytime_slider = set_daytime,
-    void_chests_tick = void_chests_tick
+    place_fire_at_feet = {-6, place_fire},
+    change_daytime_slider = {defines.events.on_gui_value_changed, set_daytime},
+    void_chests_tick = {defines.events.on_tick, void_chests_tick}
   }
 end)

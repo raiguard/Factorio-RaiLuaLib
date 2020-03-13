@@ -138,7 +138,7 @@ function self.register(id, handler, options)
     local t = global_data[name]
     local skip_registration = false
     if not t then
-      global_data[name] = {id=id, players={}, gui_filters={}}
+      global_data[name] = {players={}, gui_filters={}}
       t = global_data[name]
     elseif player_index then
       -- check if the player already registered this event
@@ -354,10 +354,10 @@ end
 -- re-registers conditional handlers if they're in the registry
 function self.load_conditional_handlers(data)
   local global_data = global.__lualib.event
-  for name, handler in pairs(data) do
+  for name,t in pairs(data) do
     local registry = global_data[name]
     if registry then
-      self.register(registry.id, handler, {name=name})
+      self.register(t[1], t[2], {name=name})
     end
   end
   return self
@@ -378,14 +378,6 @@ function self.is_registered(name, player_index)
     return true
   end
   return false
-end
-
--- gets the event IDs from the conditional registry so you don't have to provide them
-function self.deregister_conditional(handler, name, player_index)
-  local con_registry = global.__lualib.event[name]
-  if con_registry then
-    self.deregister(con_registry.id, handler, name, player_index)
-  end
 end
 
 function self.get_registry() return event_registry end
