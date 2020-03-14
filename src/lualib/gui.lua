@@ -26,7 +26,7 @@ local function get_subtable(s, t)
 end
 
 -- recursively load a GUI template
-local function recursive_load(parent, t, output, build_data)
+local function recursive_load(parent, t, output)
   -- load template
   if t.template then
     -- use a custom simple merge function to save performance
@@ -36,16 +36,19 @@ local function recursive_load(parent, t, output, build_data)
     end
   end
   local elem
-  -- skip all of this if it's a tab-and-content
-  if t.type ~= 'tab-and-content' then
+  -- special logic if this is a tab-and-content
+  if t.type == 'tab-and-content' then
+    local tab, content
+    output, tab = recursive_load(parent, t.tab, output)
+    output, content = recursive_load(parent, t.content, output)
+    parent.add_tab(tab, content)
+  else
     -- create element
     elem = parent.add(t)
     -- apply style modifications
     if t.style_mods then
       for k,v in pairs(t.style_mods) do
-        if k ~= 'name' then
-          elem.style[k] = v
-        end
+        elem.style[k] = v
       end
     end
     -- apply modifications
@@ -56,9 +59,6 @@ local function recursive_load(parent, t, output, build_data)
     end
     -- add to output table
     if t.save_as then
-      if type(t.save_as) == 'boolean' then
-        t.save_as = t.handlers
-      end
       -- recursively create tables as needed
       local prev = output
       local prev_key
@@ -79,14 +79,9 @@ local function recursive_load(parent, t, output, build_data)
     local children = t.children
     if children then
       for i=1,#children do
-        output = recursive_load(elem, children[i], output, build_data)
+        output = recursive_load(elem, children[i], output)
       end
     end
-  else -- tab-and-content
-    local tab, content
-    output, tab = recursive_load(parent, t.tab, output, build_data)
-    output, content = recursive_load(parent, t.content, output, build_data)
-    parent.add_tab(tab, content)
   end
   return output, elem
 end
@@ -94,10 +89,10 @@ end
 -- -----------------------------------------------------------------------------
 -- OBJECT
 
-function self.build(parent, templates, name, player_index)
+function self.build(parent, templates)
   local output = {}
   for i=1,#templates do
-    output = recursive_load(parent, templates[i], output, {})
+    output = recursive_load(parent, templates[i], output)
   end
   return output
 end
