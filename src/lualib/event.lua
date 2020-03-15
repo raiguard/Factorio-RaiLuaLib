@@ -2,9 +2,6 @@
 -- RAILUALIB EVENT MODULE
 -- Event registration, conditional event management, GUI event filtering.
 
--- dependencies
-local util = require('__core__.lualib.util')
-
 -- locals
 local string_match = string.match
 local table_insert = table.insert
