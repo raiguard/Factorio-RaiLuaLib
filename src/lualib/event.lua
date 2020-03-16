@@ -313,7 +313,7 @@ function self.disable(name, player_index)
       global_data.conditional_events[name] = nil
     else
       -- don't do anything else
-      return self
+      return
     end
   else
     if type(saved_data) == 'table' then
@@ -404,7 +404,7 @@ end
 -- raises an event as if it were actually called
 function self.raise(id, table)
   script.raise_event(id, table)
-  return self
+  return
 end
 
 -- set or remove event filters
@@ -413,7 +413,7 @@ function self.set_filters(id, filters)
   for _,n in pairs(id) do
     script.set_event_filter(n, filters)
   end
-  return self
+  return
 end
 
 -- holds custom event IDs
