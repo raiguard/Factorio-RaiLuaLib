@@ -7,8 +7,9 @@ local mod_gui = require('mod-gui')
 -- can also use event.register('on_init', function) if so desired
 event.on_init(function()
   log('on_init')
-  global.players = {}
-  global.chests = {}
+  global.event = {}
+  global.event.players = {}
+  global.event.chests = {}
 end)
 
 -- can also use event.on_configuration_changed(function) if so desired
@@ -22,7 +23,7 @@ event.on_player_created(function(e)
   if player.character then
   player.character.destructible = false
   end
-  global.players[e.player_index] = {}
+  global.event.players[e.player_index] = {}
 end)
 
 -- listen to multiple events by defining them in an array
@@ -58,7 +59,7 @@ end)
 -- void the contents of all wooden chests on the map on every tick
 
 local function void_chests_tick(e)
-  for _,entity in pairs(global.chests) do
+  for _,entity in pairs(global.event.chests) do
     -- remove all contents from all wooden chests on every tick
     local inventory = entity.get_inventory(defines.inventory.chest)
     inventory.clear()
@@ -68,11 +69,11 @@ end
 event.register({defines.events.on_built_entity, defines.events.on_robot_built_entity, defines.events.script_raised_built}, function(e)
   local entity = e.created_entity
   if entity.valid and entity.name == 'wooden-chest' then
-    if table_size(global.chests) == 0 then
+    if table_size(global.event.chests) == 0 then
       -- enable void chest event
       event.enable('void_chests_tick')
     end
-    global.chests[entity.unit_number] = entity
+    global.event.chests[entity.unit_number] = entity
   end
 end)
 
@@ -86,8 +87,8 @@ event.register(
   function(e)
     local entity = e.entity
     if entity.name == 'wooden-chest' then
-      global.chests[entity.unit_number] = nil
-      if table_size(global.chests) == 0 then
+      global.event.chests[entity.unit_number] = nil
+      if table_size(global.event.chests) == 0 then
       -- disable the void chest event
       event.disable('void_chests_tick')
       end
@@ -148,7 +149,7 @@ local function set_daytime(e)
   -- update other players' sliders
   for _,i in pairs(e.registered_players) do
     if i ~= e.player_index then
-      global.players[i].slider.slider_value = e.element.slider_value
+      global.event.players[i].slider.slider_value = e.element.slider_value
     end
   end
 end
@@ -186,7 +187,7 @@ event.on_gui_click(function(e)
     -- disable the slider event
     event.disable('change_daytime_slider', e.player_index)
     -- remove slider from global
-    global.players[e.player_index].slider = nil
+    global.event.players[e.player_index].slider = nil
   else
     -- create a demo GUI
     local window = frame_flow.add{type='frame', name='reh_demo_window', style=mod_gui.frame_style, direction='vertical', caption='REH Demo'}
@@ -194,7 +195,7 @@ event.on_gui_click(function(e)
     -- enable slider event and set its GUI filters
     event.enable('change_daytime_slider', e.player_index, slider)
     -- add slider to global
-    global.players[e.player_index].slider = slider
+    global.event.players[e.player_index].slider = slider
   end
 end, 'reh_demo_button_2')
 
@@ -220,7 +221,8 @@ end)
 -- the custom event can also be used conditionally just like any other event
 
 -- -----------------------------------------------------------------------------
--- EVENT GROUPS
+-- CONDITIONAL EVENT GROUPS
+-- enable and disable events en masse
 
 event.register({'on_init', 'on_load'}, function()
   local custom_events = {}

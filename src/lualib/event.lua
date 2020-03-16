@@ -485,5 +485,6 @@ end
 
 self.events = events
 self.conditional_events = conditional_events
+self.conditional_event_groups = conditional_event_groups
 
 return self
