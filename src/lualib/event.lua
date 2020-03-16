@@ -17,6 +17,8 @@ local self = {}
 local events = {}
 -- holds conditional event data
 local conditional_events = {}
+-- conditional events by group
+local conditional_event_groups = {}
 
 -- GUI filter matching functions
 local gui_filter_matchers = {
@@ -53,14 +55,17 @@ local function dispatch_event(e)
     end
     -- if we are a conditional event, insert registered players
     local name = t.conditional_name
+    local gui_filters
     if name then
       local con_data = global_data[name]
       if not con_data then error('Conditional event has been raised, but has no data!') end
-      e.registered_players = con_data.players
-      -- if there are GUI filters, check them
-      gui_filters = con_data.gui_filters[e.player_index]
-      if not gui_filters and table_size(con_data.gui_filters) > 0 then
-        goto continue
+      if con_data ~= true then
+        e.registered_players = con_data.players
+        -- if there are GUI filters, check them
+        gui_filters = con_data.gui_filters[e.player_index]
+        if not gui_filters and table_size(con_data.gui_filters) > 0 then
+          goto continue
+        end
       end
     else
       gui_filters = t.gui_filters
@@ -99,7 +104,7 @@ end
 -- these events are handled specially and do not go through dispatch_event
 
 script.on_init(function()
-  global.__lualib = {event={conditional_events={}, groups={}, players={}}}
+  global.__lualib = {event={conditional_events={}, players={}}}
   -- dispatch events
   for _,t in ipairs(events.on_init) do
     t.handler()
@@ -190,6 +195,19 @@ function self.register_conditional(data)
     t.options = t.options or {}
     -- add to conditional events table
     conditional_events[n] = t
+    -- add to group lookup
+    local groups = t.group
+    if groups then
+      if type(groups) ~= 'table' then groups = {groups} end
+      for i=1,#groups do
+        local group = conditional_event_groups[groups[i]]
+        if group then
+          group[#group+1] = n
+        else
+          conditional_event_groups[groups[i]] = {n}
+        end
+      end
+    end
   end
 end
 
@@ -260,12 +278,14 @@ end
 function self.disable(name, player_index)
   local data = conditional_events[name]
   if not data then
-    log('Tried to deregister conditional event \''..name..'\', which does not exist!')
-    return
+    error('Tried to disable conditional event \''..name..'\', which does not exist!')
   end
   local global_data = global.__lualib.event
   local saved_data = global_data.conditional_events[name]
-  if not saved_data then error('Conditional event \''..name..'\' has local data, but no global data!') end
+  if not saved_data then
+    log('Tried to disable conditional event \''..name..'\', which is not enabled!')
+    return
+  end
   -- remove player from / manipulate global data
   if player_index then
     -- check if the player is actually registered to this event
@@ -286,7 +306,7 @@ function self.disable(name, player_index)
         global_data.players[player_index] = nil
       end
     else
-      log('Tried to deregister conditional event \''..name..'\' from player #'..player_index..' when it wasn\'t registered to them!')
+      log('Tried to disable conditional event \''..name..'\' from player #'..player_index..' when it wasn\'t enabled for them!')
       return
     end
     if #saved_data.players == 0 then
@@ -330,6 +350,24 @@ function self.disable(name, player_index)
       end
       events[n] = nil
     end
+  end
+end
+
+-- enables a group of conditional events
+function self.enable_group(group, player_index)
+  local group_events = conditional_event_groups[group]
+  if not group_events then error('Group \''..group..'\' has no handlers!') end
+  for i=1,#group_events do
+    self.enable(group_events[i], player_index)
+  end
+end
+
+-- disables a group of conditional events
+function self.disable_group(group, player_index)
+  local group_events = conditional_event_groups[group]
+  if not group_events then error('Group \''..group..'\' has no handlers!') end
+  for i=1,#group_events do
+    self.disable(group_events[i], player_index)
   end
 end
 

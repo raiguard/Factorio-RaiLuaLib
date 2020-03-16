@@ -8,24 +8,24 @@ gui.add_templates{
     vertical = {type='empty-widget', name='pusher', style_mods={vertically_stretchable=true}}
   }
 }
-gui.add_handlers('demo', {
-  auto_clear_checkbox = {
-    on_gui_checked_state_changed = function(e) game.get_player(e.player_index).print(serpent.block(e)) end
-  },
-  cardinals_checkbox = {
-    on_gui_checked_state_changed = function(e) game.get_player(e.player_index).print(serpent.block(e)) end
-  },
-  grid_type_switch = {
-    on_gui_switch_state_changed = function(e) game.get_player(e.player_index).print(serpent.block(e)) end
-  },
-  divisor_slider = {
-    on_gui_value_changed = function(e) game.get_player(e.player_index).print(serpent.block(e)) end
-  },
-  divisor_textfield = {
-    on_gui_confirmed = function(e) game.get_player(e.player_index).print(serpent.block(e)) end,
-    on_gui_text_changed = function(e) game.get_player(e.player_index).print(serpent.block(e)) end
-  }
-})
+-- gui.add_handlers('demo', {
+--   auto_clear_checkbox = {
+--     on_gui_checked_state_changed = function(e) game.get_player(e.player_index).print(serpent.block(e)) end
+--   },
+--   cardinals_checkbox = {
+--     on_gui_checked_state_changed = function(e) game.get_player(e.player_index).print(serpent.block(e)) end
+--   },
+--   grid_type_switch = {
+--     on_gui_switch_state_changed = function(e) game.get_player(e.player_index).print(serpent.block(e)) end
+--   },
+--   divisor_slider = {
+--     on_gui_value_changed = function(e) game.get_player(e.player_index).print(serpent.block(e)) end
+--   },
+--   divisor_textfield = {
+--     on_gui_confirmed = function(e) game.get_player(e.player_index).print(serpent.block(e)) end,
+--     on_gui_text_changed = function(e) game.get_player(e.player_index).print(serpent.block(e)) end
+--   }
+-- })
 
 event.on_player_created(function(e)
   mod_gui.get_button_flow(game.get_player(e.player_index)).add{type='button', name='gui_module_mod_gui_button', style=mod_gui.button_style, caption='Template'}
@@ -36,7 +36,6 @@ event.on_gui_click(function(e)
   local frame_flow = mod_gui.get_frame_flow(player)
   local window = frame_flow.demo_window
   if window then
-    gui.deregister_all('demo', e.player_index)
     window.destroy()
   else
     local profiler = game.create_profiler()
@@ -55,7 +54,8 @@ event.on_gui_click(function(e)
           {type='flow', name='switch_flow', style_mods={vertical_align='center'}, direction='horizontal', children={
             {type='label', name='label', caption='Grid type:'},
             {template='pushers.horizontal'},
-            {type='switch', name='switch', left_label_caption='Increment', right_label_caption='Split', state='left', handlers='grid_type_switch', save_as=true}
+            {type='switch', name='switch', left_label_caption='Increment', right_label_caption='Split', state='left', handlers='grid_type_switch',
+              save_as='grid_type_switch'}
           }},
           -- divisor label
           {type='flow', name='divisor_label_flow', style_mods={horizontal_align='center', horizontally_stretchable=true}, children={
@@ -64,20 +64,19 @@ event.on_gui_click(function(e)
           -- divisor slider and textfield
           {type='flow', name='divisor_flow', style_mods={horizontal_spacing=8, vertical_align='center'}, direction='horizontal', children={
             {type='slider', name='slider', style='notched_slider', style_mods={horizontally_stretchable=true}, minimum_value=4, maximum_value=12,
-              value_step=1, value=5, discrete_slider=true, discrete_values=true, handlers='divisor_slider', save_as=true},
+              value_step=1, value=5, discrete_slider=true, discrete_values=true, handlers='divisor_slider', save_as='divisor_slider'},
             {type='textfield', name='textfield', style_mods={width=50, horizontal_align='center'}, numeric=true, lose_focus_on_confirm=true, text=5,
-              handlers='divisor_textfield', save_as=true}
+              handlers='divisor_textfield', save_as='divisor_textfield'}
           }}
         }}
       }, 'demo', e.player_index)
       profiler.stop()
       -- reset
       if i ~= 100 then
-        gui.deregister_all('demo', e.player_index)
         data.window.destroy()
       end
     end
     profiler.divide(100)
     game.print(profiler)
   end
-end, {gui_filters='gui_module_mod_gui_button'})
+end, 'gui_module_mod_gui_button')

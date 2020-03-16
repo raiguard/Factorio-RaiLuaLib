@@ -218,3 +218,30 @@ event.register(event.get_id('custom_event'), function(e)
 end)
 
 -- the custom event can also be used conditionally just like any other event
+
+-- -----------------------------------------------------------------------------
+-- EVENT GROUPS
+
+event.register({'on_init', 'on_load'}, function()
+  local custom_events = {}
+  for i=1,50 do
+    custom_events['demo_'..i] = {id=-30, handler=function() log('DEMO '..i) end, group={'demo_group', math.floor(i/5)}}
+  end
+  event.register_conditional(custom_events)
+end)
+
+event.on_player_created(function(e)
+  local player = game.players[e.player_index]
+  local button_flow = mod_gui.get_button_flow(player)
+  button_flow.add{type='checkbox', name='reh_demo_button_3', caption='GROUPS', state=false}
+end)
+
+event.on_gui_checked_state_changed(function(e)
+  if e.element.state == true then
+    event.enable_group(1)
+    event.enable_group(3)
+    event.enable_group(4)
+  else
+    event.disable_group('demo_group')
+  end
+end, 'reh_demo_button_3')
