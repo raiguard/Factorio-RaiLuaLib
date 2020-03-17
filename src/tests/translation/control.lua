@@ -89,16 +89,16 @@ end)
 
 event.on_gui_click(function(e)
   translation.cancel(game.get_player(e.player_index), 'recipe')
-end, {gui_filters='translation_cancel_recipe'})
+end, 'translation_cancel_recipe')
 
 event.on_gui_click(function(e)
   translation.cancel_all_for_player(game.get_player(e.player_index))
-end, {gui_filters='translation_cancel_all'})
+end, 'translation_cancel_all')
 
 event.on_gui_click(function(e)
   translation.start(game.get_player(e.player_index), 'recipe', global.__lualib.translation.build_data.recipe)
-end, {gui_filters='translation_start_recipe'})
+end, 'translation_start_recipe')
 
 event.on_gui_click(function(e)
   translate_whole(game.get_player(e.player_index))
-end, {gui_filters='translation_start_all'})
+end, 'translation_start_all')
