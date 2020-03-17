@@ -111,7 +111,7 @@ script.on_init(function()
   for _,t in ipairs(events.on_init or {}) do
     t.handler()
   end
-  -- dispatch post events
+  -- dispatch postprocess events
   for _,t in ipairs(events.on_init_postprocess or {}) do
     t.handler()
   end
@@ -122,7 +122,7 @@ script.on_load(function()
   for _,t in ipairs(events.on_load or {}) do
     t.handler()
   end
-  -- dispatch post events
+  -- dispatch postprocess events
   for _,t in ipairs(events.on_load_postprocess or {}) do
     t.handler()
   end
