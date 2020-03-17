@@ -2,8 +2,6 @@ local event = require('__RaiLuaLib__.lualib.event')
 local gui = require('__RaiLuaLib__.lualib.gui')
 local mod_gui = require('mod-gui')
 
-local debug_print = function(e) game.get_player(e.player_index).print(serpent.block(e)) end
-
 gui.templates:extend{
   pushers = {
     horizontal = {type='empty-widget', name='pusher', style_mods={horizontally_stretchable=true}},
