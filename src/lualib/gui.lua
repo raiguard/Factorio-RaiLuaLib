@@ -1,21 +1,71 @@
 -- -------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- RAILUALIB GUI MODULE
--- GUI templating and event handling
+-- GUI templating and event registration
 
 -- dependencies
--- local event = require('__RaiLuaLib__.lualib.event')
+local event = require('__RaiLuaLib__.lualib.event')
+local util = require('__core__.lualib.util')
 
 -- locals
 local string_gmatch = string.gmatch
 
--- settings
+local handler_data = {}
+
+-- object
+local gui = {}
+local handlers = {}
 local templates = {}
 
--- objects
-local self = {}
+-- -----------------------------------------------------------------------------
+-- TABLE OBJECTS
+
+local function extend_table(self, data, do_return)
+  for k, v in pairs(data) do
+    if (type(v) == "table") then
+      if (type(self[k] or false) == "table") then
+        self[k] = extend_table(self[k], v, true)
+      else
+        self[k] = table.deepcopy(v)
+      end
+    else
+      self[k] = v
+    end
+  end
+  if do_return then return self end
+end
+
+handlers.extend = extend_table
+templates.extend = extend_table
 
 -- -----------------------------------------------------------------------------
--- LOCAL UTILITIES
+-- EVENTS
+
+-- recursively navigate the handlers table to create the events
+local function generate_events(t, event_string, event_groups)
+  event_groups[#event_groups+1] = event_string
+  for k,v in pairs(t) do
+    if k ~= 'extend' then
+      local new_string = event_string..'.'..k
+      if v.handler then
+        v.group = table.deepcopy(event_groups)
+        handler_data[new_string] = v
+      else
+        generate_events(v, new_string, event_groups)
+      end
+    end
+  end
+  event_groups[#event_groups] = nil
+end
+
+-- register all GUI conditional events
+event.register({'on_init_postprocess', 'on_load_postprocess'}, function(e)
+  -- create and register conditional handlers for the GUI events
+  generate_events(handlers, 'gui', {})
+  event.register_conditional(handler_data)
+end)
+
+-- -----------------------------------------------------------------------------
+-- GUI CONSTRUCTION
 
 local function get_subtable(s, t)
   local o = t
@@ -26,7 +76,7 @@ local function get_subtable(s, t)
 end
 
 -- recursively load a GUI template
-local function recursive_load(parent, t, output)
+local function recursive_load(parent, t, output, player_index)
   -- load template
   if t.template then
     -- use a custom simple merge function to save performance
@@ -39,8 +89,8 @@ local function recursive_load(parent, t, output)
   -- special logic if this is a tab-and-content
   if t.type == 'tab-and-content' then
     local tab, content
-    output, tab = recursive_load(parent, t.tab, output)
-    output, content = recursive_load(parent, t.content, output)
+    output, tab = recursive_load(parent, t.tab, output, player_index)
+    output, content = recursive_load(parent, t.content, output, player_index)
     parent.add_tab(tab, content)
   else
     -- create element
@@ -55,6 +105,23 @@ local function recursive_load(parent, t, output)
     if t.mods then
       for k,v in pairs(t.mods) do
         elem[k] = v
+      end
+    end
+    -- register handlers
+    if t.handlers then
+      local id = elem.index
+      local name = 'gui.'..t.handlers
+      local group = event.conditional_event_groups[name]
+      if not group then error('Invalid GUI event group: '..name) end
+        -- check if this event group was already enabled
+      if event.is_enabled(group[1], player_index) then
+        -- append the GUI filters to include this element
+        for i=1,#group do
+          event.update_gui_filters(group[i], player_index, id, true)
+        end
+      else
+        -- enable the group
+        event.enable_group(name, player_index, id)
       end
     end
     -- add to output table
@@ -79,7 +146,7 @@ local function recursive_load(parent, t, output)
     local children = t.children
     if children then
       for i=1,#children do
-        output = recursive_load(elem, children[i], output)
+        output = recursive_load(elem, children[i], output, player_index)
       end
     end
   end
@@ -89,34 +156,15 @@ end
 -- -----------------------------------------------------------------------------
 -- OBJECT
 
-function self.build(parent, templates)
+function gui.build(parent, templates)
   local output = {}
   for i=1,#templates do
-    output = recursive_load(parent, templates[i], output)
+    output = recursive_load(parent, templates[i], output, parent.player_index or parent.player.index)
   end
   return output
 end
 
-function self.add_templates(...)
-  local arg = {...}
-  if #arg == 1 then
-    for k,v in pairs(arg[1]) do
-      templates[k] = v
-    end
-  else
-    templates[arg[1]] = arg[2]
-  end
-  return self
-end
+gui.templates = templates
+gui.handlers = handlers
 
--- calls a GUI template as a function
-function self.call_template(path, ...)
-  return get_subtable(path, templates)(...)
-end
-
--- retrieves and returns a GUI template
-function self.get_template(path)
-  return get_subtable(path, templates)
-end
-
-return self
+return gui
