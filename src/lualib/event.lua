@@ -8,7 +8,7 @@ local table_insert = table.insert
 local table_remove = table.remove
 
 -- object
-local self = {}
+local event = {}
 
 -- -----------------------------------------------------------------------------
 -- DISPATCHING
@@ -19,6 +19,8 @@ local events = {}
 local conditional_events = {}
 -- conditional events by group
 local conditional_event_groups = {}
+-- whether or not a certain handler has been registered to a conditional event
+local associated_handlers = {}
 
 -- GUI filter matching functions
 local gui_filter_matchers = {
@@ -106,26 +108,34 @@ end
 script.on_init(function()
   global.__lualib = {event={conditional_events={}, players={}}}
   -- dispatch events
-  for _,t in ipairs(events.on_init) do
+  for _,t in ipairs(events.on_init or {}) do
+    t.handler()
+  end
+  -- dispatch post events
+  for _,t in ipairs(events.on_init_postprocess or {}) do
     t.handler()
   end
 end)
 
 script.on_load(function()
   -- dispatch events
-  for _,t in ipairs(events.on_load) do
+  for _,t in ipairs(events.on_load or {}) do
+    t.handler()
+  end
+  -- dispatch post events
+  for _,t in ipairs(events.on_load_postprocess or {}) do
     t.handler()
   end
   -- re-register conditional events
   local registered = global.__lualib.event.conditional_events
   for n,_ in pairs(registered) do
-    self.enable(n, nil, nil, true)
+    event.enable(n, nil, nil, true)
   end
 end)
 
 script.on_configuration_changed(function(e)
   -- dispatch events
-  for _,t in ipairs(events.on_configuration_changed) do
+  for _,t in ipairs(events.on_configuration_changed or {}) do
     t.handler(e)
   end
 end)
@@ -133,12 +143,12 @@ end)
 -- -----------------------------------------------------------------------------
 -- REGISTRATION
 
-local bootstrap_events = {on_init=true, on_load=true, on_configuration_changed=true}
+local bootstrap_events = {on_init=true, on_init_postprocess=true, on_load=true, on_load_postprocess=true, on_configuration_changed=true}
 
 -- register static (non-conditional) events
 -- used by register_conditional to insert the handler
 -- conditional name is not to be used by the modder - it is internal only!
-function self.register(id, handler, gui_filters, options, conditional_name)
+function event.register(id, handler, gui_filters, options, conditional_name)
   options = options or {}
   -- register handler
   if type(id) ~= 'table' then id = {id} end
@@ -187,11 +197,15 @@ end
 
 -- register conditional (non-static) events
 -- called in on_init and on_load ONLY
-function self.register_conditional(data)
+function event.register_conditional(data)
   for n,t in pairs(data) do
     if conditional_events[n] then
       error('Duplicate conditional event: '..n)
     end
+    if associated_handlers[t.handler] then
+      error('Every conditional event must have a unique handler.')
+    end
+    associated_handlers[t.handler] = n
     t.options = t.options or {}
     -- add to conditional events table
     conditional_events[n] = t
@@ -212,7 +226,7 @@ function self.register_conditional(data)
 end
 
 -- enables a conditional event
-function self.enable(name, player_index, gui_filters, reregister)
+function event.enable(name, player_index, gui_filters, reregister)
   local data = conditional_events[name]
   if not data then
     error('Conditional event \''..name..'\' was not registered and has no data!')
@@ -271,11 +285,11 @@ function self.enable(name, player_index, gui_filters, reregister)
     end
   end
   -- register handler
-  self.register(data.id, data.handler, data.gui_filters, data.options, name)
+  event.register(data.id, data.handler, data.gui_filters, data.options, name)
 end
 
 -- disables a conditional event
-function self.disable(name, player_index)
+function event.disable(name, player_index)
   local data = conditional_events[name]
   if not data then
     error('Tried to disable conditional event \''..name..'\', which does not exist!')
@@ -302,7 +316,7 @@ function self.disable(name, player_index)
       -- remove from lookup table
       global_data.players[player_index][name] = nil
       -- remove lookup table if it's empty
-      if #global_data.players[player_index] == 0 then
+      if table_size(global_data.players[player_index]) == 0 then
         global_data.players[player_index] = nil
       end
     else
@@ -354,20 +368,20 @@ function self.disable(name, player_index)
 end
 
 -- enables a group of conditional events
-function self.enable_group(group, player_index)
+function event.enable_group(group, player_index, gui_filters)
   local group_events = conditional_event_groups[group]
   if not group_events then error('Group \''..group..'\' has no handlers!') end
   for i=1,#group_events do
-    self.enable(group_events[i], player_index)
+    event.enable(group_events[i], player_index, gui_filters)
   end
 end
 
 -- disables a group of conditional events
-function self.disable_group(group, player_index)
+function event.disable_group(group, player_index)
   local group_events = conditional_event_groups[group]
   if not group_events then error('Group \''..group..'\' has no handlers!') end
   for i=1,#group_events do
-    self.disable(group_events[i], player_index)
+    event.disable(group_events[i], player_index)
   end
 end
 
@@ -375,26 +389,26 @@ end
 -- SHORTCUT FUNCTIONS
 
 -- bootstrap events
-function self.on_init(handler, options)
-  return self.register('on_init', handler, nil, options)
+function event.on_init(handler, options)
+  return event.register('on_init', handler, nil, options)
 end
 
-function self.on_load(handler, options)
-  return self.register('on_load', handler, nil, options)
+function event.on_load(handler, options)
+  return event.register('on_load', handler, nil, options)
 end
 
-function self.on_configuration_changed(handler, options)
-  return self.register('on_configuration_changed', handler, nil, options)
+function event.on_configuration_changed(handler, options)
+  return event.register('on_configuration_changed', handler, nil, options)
 end
 
-function self.on_nth_tick(nthTick, handler, options)
-  return self.register(-nthTick, handler, nil, options)
+function event.on_nth_tick(nthTick, handler, options)
+  return event.register(-nthTick, handler, nil, options)
 end
 
 -- defines.events
 for n,id in pairs(defines.events) do
-  self[n] = function(handler, options)
-    self.register(id, handler, options)
+  event[n] = function(handler, options)
+    event.register(id, handler, options)
   end
 end
 
@@ -402,13 +416,13 @@ end
 -- EVENT MANIPULATION
 
 -- raises an event as if it were actually called
-function self.raise(id, table)
+function event.raise(id, table)
   script.raise_event(id, table)
   return
 end
 
 -- set or remove event filters
-function self.set_filters(id, filters)
+function event.set_filters(id, filters)
   if type(id) ~= 'table' then id = {id} end
   for _,n in pairs(id) do
     script.set_event_filter(n, filters)
@@ -420,7 +434,7 @@ end
 local custom_id_registry = {}
 
 -- generates or retrieves a custom event ID
-function self.get_id(name)
+function event.get_id(name)
   if not custom_id_registry[name] then
     custom_id_registry[name] = script.generate_event_name()
   end
@@ -428,7 +442,7 @@ function self.get_id(name)
 end
 
 -- saves a custom event ID
-function self.save_id(name, id)
+function event.save_id(name, id)
   if custom_id_registry[name] then
     log('Overwriting entry in custom event registry: '..name)
   end
@@ -444,7 +458,7 @@ local function append_array(t1, t2)
   return t1
 end
 -- updates the GUI filters for the given conditional event
-function self.update_gui_filters(name, player_index, filters, append_mode)
+function event.update_gui_filters(name, player_index, filters, append_mode)
   if type(filters) ~= 'table' or filters.gui then
     filters = {filters}
   end
@@ -459,12 +473,12 @@ function self.update_gui_filters(name, player_index, filters, append_mode)
 end
 
 -- retrieves and returns the global data for the given conditional event
-function self.get_event_data(name)
+function event.get_event_data(name)
   return global.__lualib.event.conditional_events[name]
 end
 
 -- returns true if the conditional event is registered
-function self.is_registered(name, player_index)
+function event.is_enabled(name, player_index)
   local global_data = global.__lualib.event
   local registry = global_data.conditional_events[name]
   if registry then
@@ -483,8 +497,8 @@ end
 
 -- -----------------------------------------------------------------------------
 
-self.events = events
-self.conditional_events = conditional_events
-self.conditional_event_groups = conditional_event_groups
+event.events = events
+event.conditional_events = conditional_events
+event.conditional_event_groups = conditional_event_groups
 
-return self
+return event
