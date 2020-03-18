@@ -2,6 +2,8 @@ local event = require('__RaiLuaLib__.lualib.event')
 local gui = require('__RaiLuaLib__.lualib.gui')
 local mod_gui = require('mod-gui')
 
+local debug_print = function(e) game.get_player(e.player_index).print(serpent.block(e)) end
+
 gui.templates:extend{
   pushers = {
     horizontal = {type='empty-widget', name='pusher', style_mods={horizontally_stretchable=true}},
@@ -12,20 +14,20 @@ gui.templates:extend{
 gui.handlers:extend{
   demo = {
     auto_clear_checkbox = {
-      state_changed = {id=defines.events.on_gui_checked_state_changed, handler=function(e) game.get_player(e.player_index).print(serpent.block(e)) end}
+      state_changed = {id=defines.events.on_gui_checked_state_changed, handler=debug_print}
     },
     cardinals_checkbox = {
-      state_changed = {id=defines.events.on_gui_checked_state_changed, handler=function(e) game.get_player(e.player_index).print(serpent.block(e)) end}
+      state_changed = {id=defines.events.on_gui_checked_state_changed, handler=debug_print}
     },
     grid_type_switch = {
-      state_changed = {id=defines.events.on_gui_switch_state_changed, handler=function(e) game.get_player(e.player_index).print(serpent.block(e)) end}
+      state_changed = {id=defines.events.on_gui_switch_state_changed, handler=debug_print}
     },
     divisor_slider = {
-      value_changed = {id=defines.events.on_gui_value_changed, handler=function(e) game.get_player(e.player_index).print(serpent.block(e)) end}
+      value_changed = {id=defines.events.on_gui_value_changed, handler=debug_print}
     },
     divisor_textfield = {
-      confirmed = {id=defines.events.on_gui_confirmed, handler=function(e) game.get_player(e.player_index).print(serpent.block(e)) end},
-      text_changed = {id=defines.events.on_gui_text_changed, handler=function(e) game.get_player(e.player_index).print(serpent.block(e)) end}
+      confirmed = {id=defines.events.on_gui_confirmed, handler=debug_print},
+      text_changed = {id=defines.events.on_gui_text_changed, handler=debug_print}
     }
   }
 }

@@ -10,6 +10,15 @@ local table_remove = table.remove
 -- object
 local event = {}
 
+-- appends an array with the elements in the second array
+local function append_array(t1, t2)
+  local t1_len = #t1
+  for i=1,#t2 do
+    t1[t1_len+i] = t2[i]
+  end
+  return t1
+end
+
 -- -----------------------------------------------------------------------------
 -- DISPATCHING
 
@@ -19,8 +28,6 @@ local events = {}
 local conditional_events = {}
 -- conditional events by group
 local conditional_event_groups = {}
--- whether or not a certain handler has been registered to a conditional event
-local associated_handlers = {}
 
 -- GUI filter matching functions
 local gui_filter_matchers = {
@@ -55,22 +62,23 @@ local function dispatch_event(e)
         end
       end
     end
-    -- if we are a conditional event, insert registered players
-    local name = t.conditional_name
-    local gui_filters
-    if name then
-      local con_data = global_data[name]
-      if not con_data then error('Conditional event has been raised, but has no data!') end
-      if con_data ~= true then
-        e.registered_players = con_data.players
-        -- if there are GUI filters, check them
-        gui_filters = con_data.gui_filters[e.player_index]
-        if not gui_filters and table_size(con_data.gui_filters) > 0 then
-          goto continue
+    -- check any conditional events
+    local gui_filters = {}
+    local names = t.conditional_names
+    if table_size(names) == 0 then
+      gui_filters = t.gui_filters
+    else
+      for name,_ in pairs(t.conditional_names) do
+        local con_data = global_data[name]
+        if not con_data then error('Conditional event \''..name..'\' has been raised, but has no data!') end
+        if con_data ~= true then
+          e.registered_players = con_data.players
+          gui_filters = append_array(gui_filters, con_data.gui_filters[e.player_index])
+          if not gui_filters and table_size(con_data.gui_filters) > 0 then
+            goto continue -- call the handler
+          end
         end
       end
-    else
-      gui_filters = t.gui_filters
     end
     -- check GUI filters, if any
     if gui_filters then
@@ -171,11 +179,12 @@ function event.register(id, handler, gui_filters, options, conditional_name)
     -- make sure the handler has not already been registered
     for i,t in ipairs(registry) do
       if t.handler == handler then
-        -- remove handler for re-insertion at the bottom
-        if not options.suppress_logging then
-          log('Re-registering existing event \''..n..'\', moving to bottom')
+        -- add conditional name to the list if it's not already there
+        if conditional_name and not t.conditional_names[conditional_name] then
+          t.conditional_names[conditional_name] = true
         end
-        table_remove(registry, i)
+        -- do nothing else
+        return
       end
     end
     -- nest GUI filters into an array if they're not already
@@ -185,7 +194,10 @@ function event.register(id, handler, gui_filters, options, conditional_name)
       end
     end
     -- insert handler
-    local data = {handler=handler, gui_filters=gui_filters, options=options, conditional_name=conditional_name}
+    local data = {handler=handler, gui_filters=gui_filters, options=options, conditional_names={}}
+    if conditional_name then
+      data.conditional_names[conditional_name] = true
+    end
     if options.insert_at then
       table_insert(registry, options.insert_at, data)
     else
@@ -202,10 +214,6 @@ function event.register_conditional(data)
     if conditional_events[n] then
       error('Duplicate conditional event: '..n)
     end
-    if associated_handlers[t.handler] then
-      error('Every conditional event must have a unique handler.')
-    end
-    associated_handlers[t.handler] = n
     t.options = t.options or {}
     -- add to conditional events table
     conditional_events[n] = t
@@ -349,9 +357,15 @@ function event.disable(name, player_index)
       log('Tried to deregister an unregistered event of id: '..n)
       return
     end
-    -- remove the handler from the events tables
     for i,t in ipairs(registry) do
       if t.handler == data.handler then
+        -- remove conditional name from table
+        t.conditional_names[name] = nil
+        if table_size(t.conditional_names) > 0 then
+          -- don't actually remove or deregister the handler
+          return
+        end
+        -- remove the handler from the events tables
         table.remove(registry, i)
       end
     end
@@ -449,14 +463,6 @@ function event.save_id(name, id)
   custom_id_registry[name] = id
 end
 
--- appends an array with the elements in the second array
-local function append_array(t1, t2)
-  local t1_len = #t1
-  for i=1,#t2 do
-    t1[t1_len+i] = t2[i]
-  end
-  return t1
-end
 -- updates the GUI filters for the given conditional event
 function event.update_gui_filters(name, player_index, filters, append_mode)
   if type(filters) ~= 'table' or filters.gui then
