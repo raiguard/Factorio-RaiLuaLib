@@ -73,12 +73,13 @@ local function dispatch_event(e)
         if not con_data then error('Conditional event \''..name..'\' has been raised, but has no data!') end
         if con_data ~= true then
           e.registered_players = con_data.players
-          gui_filters = append_array(gui_filters, con_data.gui_filters[e.player_index])
+          gui_filters = append_array(gui_filters, con_data.gui_filters[e.player_index] or {})
           if not gui_filters and table_size(con_data.gui_filters) > 0 then
             goto continue -- call the handler
           end
         end
       end
+      if #gui_filters == 0 then gui_filters = nil end
     end
     -- check GUI filters, if any
     if gui_filters then
@@ -86,6 +87,7 @@ local function dispatch_event(e)
       local elem = e.element
       if not elem then
         -- there is no element to filter, so skip calling the handler
+
         log('Event '..id..' has GUI filters but no GUI element, skipping!')
         goto continue
       end
