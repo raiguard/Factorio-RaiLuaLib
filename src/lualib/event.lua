@@ -116,7 +116,10 @@ end
 -- these events are handled specially and do not go through dispatch_event
 
 script.on_init(function()
-  global.__lualib = {event={conditional_events={}, players={}}}
+  global.__lualib = {
+    __version = script.active_mods['RaiLuaLib'], -- current version
+    event = {conditional_events={}, players={}}
+  }
   -- dispatch events
   for _,t in ipairs(events.on_init or {}) do
     t.handler()
