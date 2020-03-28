@@ -151,6 +151,8 @@ script.on_configuration_changed(function(e)
   for _,t in ipairs(events.on_configuration_changed or {}) do
     t.handler(e)
   end
+  -- update lualib version
+  global.__lualib.__version = script.active_mods['RaiLuaLib']
 end)
 
 -- -----------------------------------------------------------------------------
