@@ -2,5 +2,5 @@ return
 {
   -- 'event',
   -- 'gui',
-  -- 'translation',
+  'translation',
 }

@@ -29,17 +29,19 @@ local conditional_events = {}
 -- conditional events by group
 local conditional_event_groups = {}
 
--- GUI filter matching functions
-local gui_filter_matchers = {
-  string = function(element, filter) return string_match(element.name, filter) end,
-  number = function(element, filter) return element.index == filter end,
-  table = function(element, filter) return element == filter end
-}
+-- -- GUI filter matching functions
+-- local gui_filter_matchers = {
+--   string = function(element, filter) return string_match(element.name, filter) end,
+--   number = function(element, filter) return element.index == filter end,
+--   table = function(element, filter) return element == filter end
+-- }
 
 -- calls handler functions tied to an event
 -- all non-bootstrap events go through this function
 local function dispatch_event(e)
-  local global_data = global.__lualib.event.conditional_events
+  local global_data = global.__lualib.event
+  local con_registry = global_data.conditional_events
+  local player_lookup = global_data.players
   local id = e.name
   -- set ID for special events
   if e.nth_tick then
@@ -62,45 +64,59 @@ local function dispatch_event(e)
         end
       end
     end
-    -- check any conditional events
-    local gui_filters = {}
-    local names = t.conditional_names
-    if table_size(names) == 0 then
-      gui_filters = t.gui_filters
-    else
-      for name,_ in pairs(t.conditional_names) do
-        local con_data = global_data[name]
-        if not con_data then error('Conditional event \''..name..'\' has been raised, but has no data!') end
-        if con_data ~= true then
-          e.registered_players = con_data.players
-          gui_filters = append_array(gui_filters, con_data.gui_filters[e.player_index] or {})
-          if not gui_filters and table_size(con_data.gui_filters) > 0 then
-            goto continue -- call the handler
+    -- check conditional events
+    for name,_ in pairs(t.conditional_names) do
+      local con_data = con_registry[name]
+      if not con_data then error('Conditional event \''..name..'\' has been raised, but has no data!') end
+      if con_data ~= true then
+        local players = con_data.players
+        -- add registered players to the event
+        e.registered_players = players
+        if e.player_index then
+          -- check if this player is registered
+          if player_lookup[e.player_index][name] then
+            goto call_handler
+          else
+            goto continue
+          end
+          -- check GUI filters
+          local filters = con_data.gui_filters[e.player_index]
+          if filters then
+            
           end
         end
       end
-      if #gui_filters == 0 then gui_filters = nil end
     end
-    -- check GUI filters, if any
-    if gui_filters then
-      -- check GUI filters if they exist
-      local elem = e.element
-      if not elem then
-        -- there is no element to filter, so skip calling the handler
+    -- -- check any conditional events
+    -- local gui_filters = {}
+    -- local names = t.conditional_names
+    -- if table_size(names) == 0 then
+    --   gui_filters = t.gui_filters
+    -- else
+    --   for name,_ in pairs(t.conditional_names) do
+    --   end
+    --   if #gui_filters == 0 then gui_filters = nil end
+    -- end
+    -- -- check GUI filters, if any
+    -- if gui_filters then
+    --   -- check GUI filters if they exist
+    --   local elem = e.element
+    --   if not elem then
+    --     -- there is no element to filter, so skip calling the handler
 
-        log('Event '..id..' has GUI filters but no GUI element, skipping!')
-        goto continue
-      end
-      local matchers = gui_filter_matchers
-      for i=1,#gui_filters do
-        local filter = gui_filters[i]
-        if matchers[type(filter)](elem, filter) then
-          goto call_handler
-        end
-      end
-      -- if we're here, none of the filters matched, so don't call the handler
-      goto continue
-    end
+    --     log('Event '..id..' has GUI filters but no GUI element, skipping!')
+    --     goto continue
+    --   end
+    --   local matchers = gui_filter_matchers
+    --   for i=1,#gui_filters do
+    --     local filter = gui_filters[i]
+    --     if matchers[type(filter)](elem, filter) then
+    --       goto call_handler
+    --     end
+    --   end
+    --   -- if we're here, none of the filters matched, so don't call the handler
+    --   goto continue
+    -- end
     ::call_handler::
     -- call the handler
     t.handler(e)
@@ -163,7 +179,7 @@ local bootstrap_events = {on_init=true, on_init_postprocess=true, on_load=true, 
 -- register static (non-conditional) events
 -- used by register_conditional to insert the handler
 -- conditional name is not to be used by the modder - it is internal only!
-function event.register(id, handler, gui_filters, options, conditional_name)
+function event.register(id, handler, options, conditional_name)
   options = options or {}
   -- register handler
   if type(id) ~= 'table' then id = {id} end
@@ -194,14 +210,8 @@ function event.register(id, handler, gui_filters, options, conditional_name)
         return
       end
     end
-    -- nest GUI filters into an array if they're not already
-    if gui_filters then
-      if type(gui_filters) ~= 'table' or gui_filters.gui then
-        gui_filters = {gui_filters}
-      end
-    end
     -- insert handler
-    local data = {handler=handler, gui_filters=gui_filters, options=options, conditional_names={}}
+    local data = {handler=handler, options=options, conditional_names={}}
     if conditional_name then
       data.conditional_names[conditional_name] = true
     end
@@ -290,7 +300,11 @@ function event.enable(name, player_index, gui_filters, reregister)
   if add_player_data then
     local player_lookup = global_data.players[player_index]
     -- add the player to the event
-    saved_data.gui_filters[player_index] = gui_filters
+    local new_filters = {}
+    for i=1,#gui_filters do
+      new_filters[gui_filters[i]] = true
+    end
+    saved_data.gui_filters[player_index] = new_filters
     table_insert(saved_data.players, player_index)
     -- add to player lookup table
     if not player_lookup then
@@ -300,7 +314,7 @@ function event.enable(name, player_index, gui_filters, reregister)
     end
   end
   -- register handler
-  event.register(data.id, data.handler, data.gui_filters, data.options, name)
+  event.register(data.id, data.handler, data.options, name)
 end
 
 -- disables a conditional event
@@ -322,7 +336,7 @@ function event.disable(name, player_index)
       -- remove from players subtable
       for i,pi in ipairs(saved_data.players) do
         if pi == player_index then
-          table.remove(saved_data.players, i)
+          table_remove(saved_data.players, i)
           break
         end
       end
@@ -373,7 +387,7 @@ function event.disable(name, player_index)
           return
         end
         -- remove the handler from the events tables
-        table.remove(registry, i)
+        table_remove(registry, i)
       end
     end
     -- de-register the master handler if it's no longer needed
