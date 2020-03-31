@@ -15,6 +15,7 @@ local handler_data = {}
 local gui = {}
 local handlers = {}
 local templates = {}
+local template_lookup = {}
 
 -- -----------------------------------------------------------------------------
 -- TABLE OBJECTS
@@ -38,10 +39,24 @@ handlers.extend = extend_table
 templates.extend = extend_table
 
 -- -----------------------------------------------------------------------------
--- EVENTS
+-- HANDLERS AND TEMPLATES
+
+-- generate one-dimensional template lookup table
+local function generate_template_lookup(t, template_string)
+  for k,v in pairs(t) do
+    if k ~= 'extend' and type(v) == 'table' then
+      template_string = template_string..k
+      if v.type then
+        template_lookup[template_string] = v
+      else
+        generate_template_lookup(v, template_string..'.')
+      end
+    end
+  end
+end
 
 -- recursively navigate the handlers table to create the events
-local function generate_events(t, event_string, event_groups)
+local function generate_handlers(t, event_string, event_groups)
   event_groups[#event_groups+1] = event_string
   for k,v in pairs(t) do
     if k ~= 'extend' then
@@ -53,38 +68,31 @@ local function generate_events(t, event_string, event_groups)
         v.group = table.deepcopy(event_groups)
         handler_data[new_string] = v
       else
-        generate_events(v, new_string, event_groups)
+        generate_handlers(v, new_string, event_groups)
       end
     end
   end
   event_groups[#event_groups] = nil
 end
 
--- register all GUI conditional events
+-- create template lookup and register conditional GUI handlers
 event.register({'on_init_postprocess', 'on_load_postprocess'}, function(e)
+  -- construct template lookup table
+  generate_template_lookup(templates, '')
   -- create and register conditional handlers for the GUI events
-  generate_events(handlers, 'gui', {})
+  generate_handlers(handlers, 'gui', {})
   event.register_conditional(handler_data)
 end)
 
 -- -----------------------------------------------------------------------------
 -- GUI CONSTRUCTION
 
-local function get_subtable(s, t)
-  local o = t
-  for key in string_gmatch(s, "([^%.]+)") do
-    o = o[key]
-  end
-  return o
-end
-
 -- recursively load a GUI template
 local function recursive_load(parent, t, output, player_index)
   -- load template
   if t.template then
     -- use a custom simple merge function to save performance
-    local template = get_subtable(t.template, templates)
-    for k,v in pairs(template) do
+    for k,v in pairs(template_lookup[t.template]) do
       t[k] = v
     end
   end
