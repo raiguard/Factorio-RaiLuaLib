@@ -492,15 +492,16 @@ function event.update_gui_filters(name, player_index, filters, mode)
     error('Tried to update GUI filters for event ['..name..'], which is not enabled!')
   end
 
+  local filters_table = con_data.gui_filters
+
   if mode == 'overwrite' then
     local t = {}
     for i=1,#filters do
       t[filters[i]] = true
     end
-    con_data.gui_filters[player_index] = t
+    filters_table[player_index] = t
   else
     -- retrieve or create player GUI filters table
-    local filters_table = con_data.gui_filters
     local player_filters = filters_table[player_index]
     if not player_filters then
       filters_table[player_index] = {}
@@ -521,6 +522,9 @@ function event.update_gui_filters(name, player_index, filters, mode)
       end
     end
   end
+
+  -- return the filters
+  return filters_table[player_index]
 end
 
 -- retrieves and returns the global data for the given conditional event

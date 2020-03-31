@@ -48,7 +48,7 @@ event.on_gui_click(function(e)
     profiler.stop()
     for i=1,100 do
       profiler.restart()
-      local data = gui.build(frame_flow, {
+      local elems, filters = gui.build(frame_flow, {
         {type='frame', name='demo_window', style='dialog_frame', direction='vertical', save_as='window', children={
           -- checkboxes
           {type='flow', name='checkboxes_flow', direction='horizontal', children={
@@ -81,7 +81,7 @@ event.on_gui_click(function(e)
       -- reset
       if i ~= 100 then
         event.disable_group('gui.demo', e.player_index)
-        data.window.destroy()
+        elems.window.destroy()
       end
     end
     profiler.divide(100)

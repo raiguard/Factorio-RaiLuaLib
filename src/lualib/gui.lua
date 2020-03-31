@@ -88,7 +88,7 @@ end)
 -- GUI CONSTRUCTION
 
 -- recursively load a GUI template
-local function recursive_load(parent, t, output, player_index)
+local function recursive_load(parent, t, output, filters, player_index)
   -- load template
   if t.template then
     local new_t = template_lookup[t.template]
@@ -101,8 +101,8 @@ local function recursive_load(parent, t, output, player_index)
   -- special logic if this is a tab-and-content
   if t.type == 'tab-and-content' then
     local tab, content
-    output, tab = recursive_load(parent, t.tab, output, player_index)
-    output, content = recursive_load(parent, t.content, output, player_index)
+    output, filters, tab = recursive_load(parent, t.tab, output, filters, player_index)
+    output, filters, content = recursive_load(parent, t.content, output, filters, player_index)
     parent.add_tab(tab, content)
   else
     -- create element
@@ -121,7 +121,7 @@ local function recursive_load(parent, t, output, player_index)
     end
     -- register handlers
     if t.handlers then
-      local id = elem.index
+      local elem_index = elem.index
       local name = 'gui.'..t.handlers
       local group = event.conditional_event_groups[name]
       if not group then error('Invalid GUI event group: '..name) end
@@ -129,11 +129,12 @@ local function recursive_load(parent, t, output, player_index)
       if event.is_enabled(group[1], player_index) then
         -- append the GUI filters to include this element
         for i=1,#group do
-          event.update_gui_filters(group[i], player_index, id, true)
+          filters[name] = event.update_gui_filters(group[i], player_index, elem_index, true)
         end
       else
         -- enable the group
-        event.enable_group(name, player_index, id)
+        event.enable_group(name, player_index, elem_index)
+        filters[name] = {elem_index}
       end
     end
     -- add to output table
@@ -158,11 +159,11 @@ local function recursive_load(parent, t, output, player_index)
     local children = t.children
     if children then
       for i=1,#children do
-        output = recursive_load(elem, children[i], output, player_index)
+        output, filters = recursive_load(elem, children[i], output, filters, player_index)
       end
     end
   end
-  return output, elem
+  return output, filters, elem
 end
 
 -- -----------------------------------------------------------------------------
@@ -170,10 +171,11 @@ end
 
 function gui.build(parent, templates)
   local output = {}
+  local filters = {}
   for i=1,#templates do
-    output = recursive_load(parent, templates[i], output, parent.player_index or parent.player.index)
+    output, filters = recursive_load(parent, templates[i], output, filters, parent.player_index or parent.player.index)
   end
-  return output
+  return output, filters
 end
 
 gui.templates = templates
