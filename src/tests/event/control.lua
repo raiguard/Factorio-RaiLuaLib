@@ -191,9 +191,7 @@ event.on_gui_click(function(e)
     local window = frame_flow.add{type='frame', name='reh_demo_window', style=mod_gui.frame_style, direction='vertical', caption='REH Demo'}
     local slider = window.add{type='slider', name='reh_demo_slider', minimum_value=0, maximum_value=1, value=player.surface.daytime}
     -- enable slider event and set its GUI filters
-    event.enable('change_daytime_slider', e.player_index)
-    -- testing
-    event.update_gui_filters('change_daytime_slider', e.player_index, slider.index)
+    event.enable('change_daytime_slider', e.player_index, slider.index)
     -- add slider to global
     global.event.players[e.player_index].slider = slider
   end

@@ -3,7 +3,6 @@
 -- Event registration, conditional event management, GUI event filtering.
 
 -- locals
-local string_match = string.match
 local table_insert = table.insert
 local table_remove = table.remove
 
@@ -185,7 +184,7 @@ function event.register(id, handler, gui_filters, options, conditional_name)
       end
     end
     -- make sure the handler has not already been registered
-    for i,t in ipairs(registry) do
+    for _,t in ipairs(registry) do
       if t.handler == handler then
         -- add conditional name to the list if it's not already there
         if conditional_name and not t.conditional_names[conditional_name] then
@@ -493,29 +492,34 @@ function event.update_gui_filters(name, player_index, filters, mode)
     error('Tried to update GUI filters for event ['..name..'], which is not enabled!')
   end
 
-  -- retrieve or create player GUI filters table
-  local filters_table = con_data.gui_filters
-  local player_filters = filters_table[player_index]
-  if not player_filters then
-    filters_table[player_index] = {}
-    player_filters = filters_table[player_index]
-  end
-
-  -- modify filters
-  if mode == 'add' then -- add each one
-    for i=1,#filters do
-      player_filters[filters[i]] = true
-    end
-  elseif mode == 'remove' then -- remove each one
-    for i=1,#filters do
-      player_filters[filters[i]] = nil
-    end
-  elseif mode == 'overwrite' then -- completely replace the table with the new filters
+  if mode == 'overwrite' then
     local t = {}
     for i=1,#filters do
       t[filters[i]] = true
     end
-    filters_table[player_index] = t
+    con_data.gui_filters[player_index] = t
+  else
+    -- retrieve or create player GUI filters table
+    local filters_table = con_data.gui_filters
+    local player_filters = filters_table[player_index]
+    if not player_filters then
+      filters_table[player_index] = {}
+      player_filters = filters_table[player_index]
+    end
+    -- modify filters
+    if mode == 'add' then -- add each one
+      for i=1,#filters do
+        player_filters[filters[i]] = true
+      end
+    elseif mode == 'remove' then -- remove each one
+      for i=1,#filters do
+        player_filters[filters[i]] = nil
+      end
+      -- remove filters table if it is empty
+      if table_size(player_filters) == 0 then
+        filters_table[player_index] = nil
+      end
+    end
   end
 end
 
