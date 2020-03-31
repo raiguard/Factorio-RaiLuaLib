@@ -91,10 +91,11 @@ end)
 local function recursive_load(parent, t, output, player_index)
   -- load template
   if t.template then
-    -- use a custom simple merge function to save performance
-    for k,v in pairs(template_lookup[t.template]) do
-      t[k] = v
+    local new_t = template_lookup[t.template]
+    for k,v in pairs(t) do
+      new_t[k] = v
     end
+    t = new_t
   end
   local elem
   -- special logic if this is a tab-and-content
