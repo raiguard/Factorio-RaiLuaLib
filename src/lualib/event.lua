@@ -10,15 +10,6 @@ local table_remove = table.remove
 -- object
 local event = {}
 
--- appends an array with the elements in the second array
-local function append_array(t1, t2)
-  local t1_len = #t1
-  for i=1,#t2 do
-    t1[t1_len+i] = t2[i]
-  end
-  return t1
-end
-
 -- -----------------------------------------------------------------------------
 -- DISPATCHING
 
@@ -28,13 +19,6 @@ local events = {}
 local conditional_events = {}
 -- conditional events by group
 local conditional_event_groups = {}
-
--- -- GUI filter matching functions
--- local gui_filter_matchers = {
---   string = function(element, filter) return string_match(element.name, filter) end,
---   number = function(element, filter) return element.index == filter end,
---   table = function(element, filter) return element == filter end
--- }
 
 -- calls handler functions tied to an event
 -- all non-bootstrap events go through this function
@@ -50,73 +34,74 @@ local function dispatch_event(e)
   if e.input_name then
     id = e.input_name
   end
-  -- error checkingw
+  -- error checking
   if not events[id] then
     error('Event is registered but has no handlers!')
   end
-  for _,t in ipairs(events[id]) do -- for every handler registered to this event
+  -- for later use
+  local elem = e.element
+
+  -- for every handler registered to this event
+  for _,t in ipairs(events[id]) do
+    local has_name = false
     local options = t.options
+    -- check if any userdata has gone invalid since last iteration
     if not options.skip_validation then
-      -- check if any userdata has gone invalid since last iteration
       for _,v in pairs(e) do
         if type(v) == 'table' and v.__self and not v.valid then
           return
         end
       end
     end
+    -- check static GUI filters, if any
+    local filters = t.gui_filters
+    if filters then
+      if not elem then
+        log('Static event '..id..' has GUI filters but no GUI element, skipping!')
+        goto continue
+      end
+      if filters[elem.index] or filters[elem.name] then
+        goto call_handler
+      end
+      goto continue -- none of them matched
+    end
     -- check conditional events
     for name,_ in pairs(t.conditional_names) do
+      has_name = true
       local con_data = con_registry[name]
       if not con_data then error('Conditional event \''..name..'\' has been raised, but has no data!') end
-      if con_data ~= true then
+      -- if con_data is true, then skip all checks and just call the handler
+      if con_data == true then
+        goto call_handler
+      else
         local players = con_data.players
         -- add registered players to the event
         e.registered_players = players
         if e.player_index then
           -- check if this player is registered
           if player_lookup[e.player_index][name] then
-            goto call_handler
-          else
-            goto continue
+            -- check GUI filters
+            local player_filters = con_data.gui_filters[e.player_index]
+            if player_filters then
+              if e.element then
+                if player_filters[elem.index] or player_filters[elem.name] then
+                  goto call_handler
+                end
+              else
+                log('Conditional event '..name..' has GUI filters but no GUI element, skipping!')
+              end
+            else
+              goto call_handler
+            end
           end
-          -- check GUI filters
-          local filters = con_data.gui_filters[e.player_index]
-          if filters then
-            
-          end
+        else
+          goto call_handler
         end
       end
     end
-    -- -- check any conditional events
-    -- local gui_filters = {}
-    -- local names = t.conditional_names
-    -- if table_size(names) == 0 then
-    --   gui_filters = t.gui_filters
-    -- else
-    --   for name,_ in pairs(t.conditional_names) do
-    --   end
-    --   if #gui_filters == 0 then gui_filters = nil end
-    -- end
-    -- -- check GUI filters, if any
-    -- if gui_filters then
-    --   -- check GUI filters if they exist
-    --   local elem = e.element
-    --   if not elem then
-    --     -- there is no element to filter, so skip calling the handler
 
-    --     log('Event '..id..' has GUI filters but no GUI element, skipping!')
-    --     goto continue
-    --   end
-    --   local matchers = gui_filter_matchers
-    --   for i=1,#gui_filters do
-    --     local filter = gui_filters[i]
-    --     if matchers[type(filter)](elem, filter) then
-    --       goto call_handler
-    --     end
-    --   end
-    --   -- if we're here, none of the filters matched, so don't call the handler
-    --   goto continue
-    -- end
+    -- if we're here and there was at least one conditional name, nothing caused the handler to trigger, so skip it
+    if has_name then goto continue end
     ::call_handler::
     -- call the handler
     t.handler(e)
@@ -179,7 +164,7 @@ local bootstrap_events = {on_init=true, on_init_postprocess=true, on_load=true, 
 -- register static (non-conditional) events
 -- used by register_conditional to insert the handler
 -- conditional name is not to be used by the modder - it is internal only!
-function event.register(id, handler, options, conditional_name)
+function event.register(id, handler, gui_filters, options, conditional_name)
   options = options or {}
   -- register handler
   if type(id) ~= 'table' then id = {id} end
@@ -210,8 +195,19 @@ function event.register(id, handler, options, conditional_name)
         return
       end
     end
+    -- format gui filters
+    local filters
+    if gui_filters then
+      if type(gui_filters) ~= 'table' then
+        gui_filters = {gui_filters}
+      end
+      filters = {}
+      for i=1,#gui_filters do
+        filters[gui_filters[i]] = true
+      end
+    end
     -- insert handler
-    local data = {handler=handler, options=options, conditional_names={}}
+    local data = {handler=handler, gui_filters=filters, options=options, conditional_names={}}
     if conditional_name then
       data.conditional_names[conditional_name] = true
     end
@@ -261,7 +257,7 @@ function event.enable(name, player_index, gui_filters, reregister)
   local add_player_data = false
   -- nest GUI filters into an array if they're not already
   if gui_filters then
-    if type(gui_filters) ~= 'table' or gui_filters.gui then
+    if type(gui_filters) ~= 'table' then
       gui_filters = {gui_filters}
     end
   end
@@ -300,11 +296,13 @@ function event.enable(name, player_index, gui_filters, reregister)
   if add_player_data then
     local player_lookup = global_data.players[player_index]
     -- add the player to the event
-    local new_filters = {}
-    for i=1,#gui_filters do
-      new_filters[gui_filters[i]] = true
+    if gui_filters then
+      local new_filters = {}
+      for i=1,#gui_filters do
+        new_filters[gui_filters[i]] = true
+      end
+      saved_data.gui_filters[player_index] = new_filters
     end
-    saved_data.gui_filters[player_index] = new_filters
     table_insert(saved_data.players, player_index)
     -- add to player lookup table
     if not player_lookup then
@@ -314,7 +312,7 @@ function event.enable(name, player_index, gui_filters, reregister)
     end
   end
   -- register handler
-  event.register(data.id, data.handler, data.options, name)
+  event.register(data.id, data.handler, data.gui_filters, data.options, name)
 end
 
 -- disables a conditional event
@@ -485,17 +483,39 @@ function event.save_id(name, id)
 end
 
 -- updates the GUI filters for the given conditional event
-function event.update_gui_filters(name, player_index, filters, append_mode)
-  if type(filters) ~= 'table' or filters.gui then
+function event.update_gui_filters(name, player_index, filters, mode)
+  mode = mode or 'overwrite'
+  if type(filters) ~= 'table' then
     filters = {filters}
   end
-  local event_data = global.__lualib.event.conditional_events[name]
-  if not event_data then error('Cannot update GUI filters for a non-existent event!') end
-  if append_mode then
-    local filters_t = event_data.gui_filters
-    filters_t[player_index] = append_array(filters_t[player_index], filters)
-  else
-    event_data.gui_filters[player_index] = filters
+  local con_data = global.__lualib.event.conditional_events[name]
+  if not con_data then
+    error('Tried to update GUI filters for event ['..name..'], which is not enabled!')
+  end
+
+  -- retrieve or create player GUI filters table
+  local filters_table = con_data.gui_filters
+  local player_filters = filters_table[player_index]
+  if not player_filters then
+    filters_table[player_index] = {}
+    player_filters = filters_table[player_index]
+  end
+
+  -- modify filters
+  if mode == 'add' then -- add each one
+    for i=1,#filters do
+      player_filters[filters[i]] = true
+    end
+  elseif mode == 'remove' then -- remove each one
+    for i=1,#filters do
+      player_filters[filters[i]] = nil
+    end
+  elseif mode == 'overwrite' then -- completely replace the table with the new filters
+    local t = {}
+    for i=1,#filters do
+      t[filters[i]] = true
+    end
+    filters_table[player_index] = t
   end
 end
 

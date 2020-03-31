@@ -128,15 +128,13 @@ end)
 
 -- -------------------------------------
 -- REGISTRATION
--- conditional events are registered in on_init and on_load, then enabled/disabled during runtime
+-- conditional events are registered in the root scope, or in on_init and on_load, then enabled/disabled during runtime
 
 -- register the conditional events to allow for save/load safety
-event.register({'on_init', 'on_load'}, function()
-  event.register_conditional{
-    place_fire_at_feet = {id=-6, handler=place_fire, options={skip_validation=true}},
-    void_chests_tick = {id=defines.events.on_tick, handler=void_chests_tick}
-  }
-end)
+event.register_conditional{
+  place_fire_at_feet = {id=-6, handler=place_fire, options={skip_validation=true}},
+  void_chests_tick = {id=defines.events.on_tick, handler=void_chests_tick}
+}
 
 -- -----------------------------------------------------------------------------
 -- GUI EVENTS
@@ -193,18 +191,18 @@ event.on_gui_click(function(e)
     local window = frame_flow.add{type='frame', name='reh_demo_window', style=mod_gui.frame_style, direction='vertical', caption='REH Demo'}
     local slider = window.add{type='slider', name='reh_demo_slider', minimum_value=0, maximum_value=1, value=player.surface.daytime}
     -- enable slider event and set its GUI filters
-    event.enable('change_daytime_slider', e.player_index, slider)
+    event.enable('change_daytime_slider', e.player_index)
+    -- testing
+    event.update_gui_filters('change_daytime_slider', e.player_index, slider.index)
     -- add slider to global
     global.event.players[e.player_index].slider = slider
   end
 end, 'reh_demo_button_2')
 
--- register the conditional events to allow for save/load safety
-event.register({'on_init', 'on_load'}, function()
-  event.register_conditional{
-    change_daytime_slider = {id=defines.events.on_gui_value_changed, handler=set_daytime}
-  }
-end)
+-- register the conditional event to allow for save/load safety
+event.register_conditional{
+  change_daytime_slider = {id=defines.events.on_gui_value_changed, handler=set_daytime, options={skip_validation=true}}
+}
 
 -- -----------------------------------------------------------------------------
 -- CUSTOM EVENTS
