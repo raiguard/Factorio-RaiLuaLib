@@ -45,11 +45,11 @@ templates.extend = extend_table
 local function generate_template_lookup(t, template_string)
   for k,v in pairs(t) do
     if k ~= 'extend' and type(v) == 'table' then
-      template_string = template_string..k
+      local new_string = template_string..k
       if v.type then
-        template_lookup[template_string] = v
+        template_lookup[new_string] = v
       else
-        generate_template_lookup(v, template_string..'.')
+        generate_template_lookup(v, new_string..'.')
       end
     end
   end
@@ -126,16 +126,21 @@ local function recursive_build(parent, t, output, filters, player_index)
       local group = event.conditional_event_groups[name]
       if not group then error('Invalid GUI event group: '..name) end
         -- check if this event group was already enabled
-      if event.is_enabled(group[1], player_index) then
-        -- append the GUI filters to include this element
-        for i=1,#group do
-          filters[name] = event.update_gui_filters(group[i], player_index, elem_index, true)
+        if event.is_enabled(group[1], player_index) then
+          -- append the GUI filters to include this element
+          for i=1,#group do
+            event.update_gui_filters(group[i], player_index, elem_index, 'add')
+            if filters[name] then
+              filters[name][elem_index] = elem_index
+            else
+              filters[name] = {[elem_index]=elem_index}
+            end
+          end
+        else
+          -- enable the group
+          event.enable_group(name, player_index, elem_index)
+          filters[name] = {[elem_index]=elem_index}
         end
-      else
-        -- enable the group
-        event.enable_group(name, player_index, elem_index)
-        filters[name] = {elem_index}
-      end
     end
     -- add to output table
     if t.save_as then

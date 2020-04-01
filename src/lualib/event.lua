@@ -2,6 +2,9 @@
 -- RAILUALIB EVENT MODULE
 -- Event registration, conditional event management, GUI event filtering.
 
+-- dependencies
+local migration = require('__RaiLuaLib__.lualib.migration')
+
 -- locals
 local table_insert = table.insert
 local table_remove = table.remove
@@ -147,6 +150,21 @@ script.on_load(function()
 end)
 
 script.on_configuration_changed(function(e)
+  -- module migrations
+  migration.run(global.__lualib.__version, {
+    ['0.2.0'] = function()
+      -- convert all GUI filters to like-key -> value
+      for _,con_data in pairs(global.__lualib.event.conditional_events) do
+        for i,filters in pairs(con_data.gui_filters) do
+          local new = {}
+          for fi=1,#filters do
+            new[filters[fi]] = filters[fi]
+          end
+          con_data.gui_filters[i] = new
+        end
+      end
+    end
+  })
   -- dispatch events
   for _,t in ipairs(events.on_configuration_changed or {}) do
     t.handler(e)
@@ -201,8 +219,8 @@ function event.register(id, handler, gui_filters, options, conditional_name)
         gui_filters = {gui_filters}
       end
       filters = {}
-      for i=1,#gui_filters do
-        filters[gui_filters[i]] = true
+      for _,filter in pairs(gui_filters) do
+        filters[filter] = filter
       end
     end
     -- insert handler
@@ -254,12 +272,6 @@ function event.enable(name, player_index, gui_filters, reregister)
   local global_data = global.__lualib.event
   local saved_data = global_data.conditional_events[name]
   local add_player_data = false
-  -- nest GUI filters into an array if they're not already
-  if gui_filters then
-    if type(gui_filters) ~= 'table' then
-      gui_filters = {gui_filters}
-    end
-  end
   if saved_data then
     -- update existing data / add this player
     if player_index then
@@ -291,14 +303,20 @@ function event.enable(name, player_index, gui_filters, reregister)
     end
     saved_data = global_data.conditional_events[name]
   end
+  -- nest GUI filters into an array if they're not already
+  if gui_filters then
+    if type(gui_filters) ~= 'table' then
+      gui_filters = {gui_filters}
+    end
+  end
   -- add to player lookup table
   if add_player_data then
     local player_lookup = global_data.players[player_index]
     -- add the player to the event
     if gui_filters then
       local new_filters = {}
-      for i=1,#gui_filters do
-        new_filters[gui_filters[i]] = true
+      for _,filter in pairs(gui_filters) do
+        new_filters[filter] = filter
       end
       saved_data.gui_filters[player_index] = new_filters
     end
@@ -346,7 +364,7 @@ function event.disable(name, player_index)
         global_data.players[player_index] = nil
       end
     else
-      log('Tried to disable conditional event \''..name..'\' from player #'..player_index..' when it wasn\'t enabled for them!')
+      log('Tried to disable conditional event \''..name..'\' from player '..player_index..' when it wasn\'t enabled for them!')
       return
     end
     if #saved_data.players == 0 then
@@ -496,8 +514,8 @@ function event.update_gui_filters(name, player_index, filters, mode)
 
   if mode == 'overwrite' then
     local t = {}
-    for i=1,#filters do
-      t[filters[i]] = true
+    for _,filter in pairs(filters) do
+      t[filter] = filter
     end
     filters_table[player_index] = t
   else
@@ -509,12 +527,12 @@ function event.update_gui_filters(name, player_index, filters, mode)
     end
     -- modify filters
     if mode == 'add' then -- add each one
-      for i=1,#filters do
-        player_filters[filters[i]] = true
+      for _,filter in pairs(filters) do
+        player_filters[filter] = filter
       end
     elseif mode == 'remove' then -- remove each one
-      for i=1,#filters do
-        player_filters[filters[i]] = nil
+      for _,filter in pairs(filters) do
+        player_filters[filter] = nil
       end
       -- remove filters table if it is empty
       if table_size(player_filters) == 0 then
@@ -525,6 +543,15 @@ function event.update_gui_filters(name, player_index, filters, mode)
 
   -- return the filters
   return filters_table[player_index]
+end
+
+-- retrieves and returns GUI filters for the given conditional event and player
+function event.get_gui_filters(name, player_index)
+  local con_data = global.__lualib.event.conditional_events[name]
+  if not con_data then
+    error('Tried to retrieve GUI filters for conditional event ['..name..'], which is not enabled!')
+  end
+  return con_data.gui_filters[player_index]
 end
 
 -- retrieves and returns the global data for the given conditional event
