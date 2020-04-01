@@ -88,7 +88,7 @@ end)
 -- GUI CONSTRUCTION
 
 -- recursively load a GUI template
-local function recursive_load(parent, t, output, filters, player_index)
+local function recursive_build(parent, t, output, filters, player_index)
   -- load template
   if t.template then
     local new_t = template_lookup[t.template]
@@ -101,8 +101,8 @@ local function recursive_load(parent, t, output, filters, player_index)
   -- special logic if this is a tab-and-content
   if t.type == 'tab-and-content' then
     local tab, content
-    output, filters, tab = recursive_load(parent, t.tab, output, filters, player_index)
-    output, filters, content = recursive_load(parent, t.content, output, filters, player_index)
+    output, filters, tab = recursive_build(parent, t.tab, output, filters, player_index)
+    output, filters, content = recursive_build(parent, t.content, output, filters, player_index)
     parent.add_tab(tab, content)
   else
     -- create element
@@ -159,11 +159,37 @@ local function recursive_load(parent, t, output, filters, player_index)
     local children = t.children
     if children then
       for i=1,#children do
-        output, filters = recursive_load(elem, children[i], output, filters, player_index)
+        output, filters = recursive_build(elem, children[i], output, filters, player_index)
       end
     end
   end
   return output, filters, elem
+end
+
+-- updates the GUI based on the template
+local function recursive_update(parent, t, player_index)
+  local children = parent.children
+  local to_destroy = {}
+  for i=1,#t do
+    local elem = children[i]
+    local elem_t = t[i]
+    if elem_t.delete then
+      to_destroy[#to_destroy+1] = elem
+    else
+      for k,v in pairs(elem_t.mods or {}) do
+        if k ~= 'children' then
+          elem[k] = v
+        end
+      end
+      local elem_style = elem.style
+      for k,v in pairs(elem_t.style_mods or {}) do
+        elem_style[k] = v
+      end
+      if elem_t.children then
+        recursive_update(elem, elem_t.children, player_index)
+      end
+    end
+  end
 end
 
 -- -----------------------------------------------------------------------------
@@ -173,9 +199,13 @@ function gui.build(parent, templates)
   local output = {}
   local filters = {}
   for i=1,#templates do
-    output, filters = recursive_load(parent, templates[i], output, filters, parent.player_index or parent.player.index)
+    output, filters = recursive_build(parent, templates[i], output, filters, parent.player_index or parent.player.index)
   end
   return output, filters
+end
+
+function gui.update(parent, templates)
+  recursive_update(parent, templates, parent.player_index or parent.player.index)
 end
 
 gui.templates = templates
