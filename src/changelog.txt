@@ -1,10 +1,9 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.0
-Date: ????
+Date: 2020-04-01
   Features:
     - event.update_gui_filters() can now add, remove, or completely overwrite GUI filters, and returns the modified filters table
     - gui.build() also returns a lookup dictionary of event_name -> gui_filters, in addition to the output table
-    - Added gui.update() function and GUI update templates
   Changes:
     - Reworked event and gui modules to increase performance
     - Changed GUI filters format to increase lookup performance

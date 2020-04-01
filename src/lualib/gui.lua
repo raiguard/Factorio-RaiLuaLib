@@ -171,31 +171,31 @@ local function recursive_build(parent, t, output, filters, player_index)
   return output, filters, elem
 end
 
--- updates the GUI based on the template
-local function recursive_update(parent, t, player_index)
-  local children = parent.children
-  local to_destroy = {}
-  for i=1,#t do
-    local elem = children[i]
-    local elem_t = t[i]
-    if elem_t.delete then
-      to_destroy[#to_destroy+1] = elem
-    else
-      for k,v in pairs(elem_t.mods or {}) do
-        if k ~= 'children' then
-          elem[k] = v
-        end
-      end
-      local elem_style = elem.style
-      for k,v in pairs(elem_t.style_mods or {}) do
-        elem_style[k] = v
-      end
-      if elem_t.children then
-        recursive_update(elem, elem_t.children, player_index)
-      end
-    end
-  end
-end
+-- -- updates the GUI based on the template
+-- local function recursive_update(parent, t, player_index)
+--   local children = parent.children
+--   local to_destroy = {}
+--   for i=1,#t do
+--     local elem = children[i]
+--     local elem_t = t[i]
+--     if elem_t.delete then
+--       to_destroy[#to_destroy+1] = elem
+--     else
+--       for k,v in pairs(elem_t.mods or {}) do
+--         if k ~= 'children' then
+--           elem[k] = v
+--         end
+--       end
+--       local elem_style = elem.style
+--       for k,v in pairs(elem_t.style_mods or {}) do
+--         elem_style[k] = v
+--       end
+--       if elem_t.children then
+--         recursive_update(elem, elem_t.children, player_index)
+--       end
+--     end
+--   end
+-- end
 
 -- -----------------------------------------------------------------------------
 -- OBJECT
@@ -209,9 +209,9 @@ function gui.build(parent, templates)
   return output, filters
 end
 
-function gui.update(parent, templates)
-  recursive_update(parent, templates, parent.player_index or parent.player.index)
-end
+-- function gui.update(parent, templates)
+--   recursive_update(parent, templates, parent.player_index or parent.player.index)
+-- end
 
 gui.templates = templates
 gui.handlers = handlers

@@ -151,20 +151,23 @@ end)
 
 script.on_configuration_changed(function(e)
   -- module migrations
-  migration.run(global.__lualib.__version, {
-    ['0.2.0'] = function()
-      -- convert all GUI filters to like-key -> value
-      for _,con_data in pairs(global.__lualib.event.conditional_events) do
-        for i,filters in pairs(con_data.gui_filters) do
-          local new = {}
-          for fi=1,#filters do
-            new[filters[fi]] = filters[fi]
+  if script.active_mods['RaiLuaLib'] ~= global.__lualib.__version then
+    log('Running lualib event module migrations')
+    migration.run(global.__lualib.__version, {
+      ['0.2.0'] = function()
+        -- convert all GUI filters to like-key -> value
+        for _,con_data in pairs(global.__lualib.event.conditional_events) do
+          for i,filters in pairs(con_data.gui_filters) do
+            local new = {}
+            for fi=1,#filters do
+              new[filters[fi]] = filters[fi]
+            end
+            con_data.gui_filters[i] = new
           end
-          con_data.gui_filters[i] = new
         end
       end
-    end
-  })
+    })
+  end
   -- dispatch events
   for _,t in ipairs(events.on_configuration_changed or {}) do
     t.handler(e)
