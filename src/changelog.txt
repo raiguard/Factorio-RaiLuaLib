@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.1
+Date: ????
+  Features:
+    - Added 'match_filter_strings` option to the event module options table, to allow matching partial strings as GUI filters
+    - Added event data migration utility file
+  Bugfixes:
+    - Fixed crash when the lualib's previous version isn't saved in global
+---------------------------------------------------------------------------------------------------
 Version: 0.2.0
 Date: 2020-04-01
   Features:

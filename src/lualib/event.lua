@@ -6,6 +6,7 @@
 local migration = require('__RaiLuaLib__.lualib.migration')
 
 -- locals
+local string_match = string.match
 local table_insert = table.insert
 local table_remove = table.remove
 
@@ -64,6 +65,14 @@ local function dispatch_event(e)
       end
       if filters[elem.index] or filters[elem.name] then
         goto call_handler
+      elseif options.match_filter_strings then
+        local name = elem.name
+        for _,filter in pairs(filters) do
+          -- check all string GUI filters to see if they partially match
+          if type(filter) == 'string' and string_match(filter, name) then
+            goto call_handler
+          end
+        end
       end
       goto continue -- none of them matched
     end
@@ -88,6 +97,14 @@ local function dispatch_event(e)
               if e.element then
                 if player_filters[elem.index] or player_filters[elem.name] then
                   goto call_handler
+                elseif options.match_filter_strings then
+                  local elem_name = elem.name
+                  for _,filter in pairs(player_filters) do
+                    -- check all string GUI filters to see if they partially match
+                    if type(filter) == 'string' and string_match(elem_name, filter) then
+                      goto call_handler
+                    end
+                  end
                 end
               else
                 log('Conditional event '..name..' has GUI filters but no GUI element, skipping!')
@@ -153,7 +170,7 @@ script.on_configuration_changed(function(e)
   -- module migrations
   if script.active_mods['RaiLuaLib'] ~= global.__lualib.__version then
     log('Running lualib event module migrations')
-    migration.run(global.__lualib.__version, {
+    migration.run(global.__lualib.__version or '0.1.0', {
       ['0.2.0'] = function()
         -- convert all GUI filters to like-key -> value
         for _,con_data in pairs(global.__lualib.event.conditional_events) do
