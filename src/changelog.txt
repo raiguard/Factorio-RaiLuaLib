@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.1
-Date: ????
+Date: 2020-04-02
   Features:
     - Added 'match_filter_strings` option to the event module options table, to allow matching partial strings as GUI filters
     - Added event data migration utility file
