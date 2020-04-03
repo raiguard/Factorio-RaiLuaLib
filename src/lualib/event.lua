@@ -89,8 +89,9 @@ local function dispatch_event(e)
         -- add registered players to the event
         e.registered_players = players
         if e.player_index then
+          local player_events = player_lookup[e.player_index]
           -- check if this player is registered
-          if player_lookup[e.player_index][name] then
+          if player_events and player_events[name] then
             -- check GUI filters
             local player_filters = con_data.gui_filters[e.player_index]
             if player_filters then
