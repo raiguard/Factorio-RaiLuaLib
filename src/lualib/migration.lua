@@ -15,6 +15,8 @@ function migration.compare_versions(v1, v2)
   for i=1,#v1_split do
     if v1_split[i] < v2_split[i] then
       return true
+    elseif v1_split[i] > v2_split[i] then
+      return false
     end
   end
   return false

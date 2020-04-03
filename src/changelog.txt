@@ -2,6 +2,7 @@
 Version: 0.2.2
 Date: ????
   Bugfixes:
+    - Fixed that the version comparison function in the migration module didn't actually work properly
     - Fixed a crash when a player has no lookup table when a conditional event is fired
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.1
