@@ -6,7 +6,7 @@
 local migration = require('__RaiLuaLib__.lualib.migration')
 
 -- locals
-local string_match = string.match
+local string_find = string.find
 local table_insert = table.insert
 local table_remove = table.remove
 
@@ -69,7 +69,7 @@ local function dispatch_event(e)
         local name = elem.name
         for _,filter in pairs(filters) do
           -- check all string GUI filters to see if they partially match
-          if type(filter) == 'string' and string_match(filter, name) then
+          if type(filter) == 'string' and string_find(name, filter) then
             goto call_handler
           end
         end
@@ -102,7 +102,7 @@ local function dispatch_event(e)
                   local elem_name = elem.name
                   for _,filter in pairs(player_filters) do
                     -- check all string GUI filters to see if they partially match
-                    if type(filter) == 'string' and string_match(elem_name, filter) then
+                    if type(filter) == 'string' and string_find(elem_name, filter) then
                       goto call_handler
                     end
                   end
@@ -362,7 +362,9 @@ function event.disable(name, player_index)
   local global_data = global.__lualib.event
   local saved_data = global_data.conditional_events[name]
   if not saved_data then
-    log('Tried to disable conditional event \''..name..'\', which is not enabled!')
+    if not data.options.suppress_logging then
+      log('Tried to disable conditional event \''..name..'\', which is not enabled!')
+    end
     return
   end
   -- remove player from / manipulate global data
@@ -385,7 +387,9 @@ function event.disable(name, player_index)
         global_data.players[player_index] = nil
       end
     else
-      log('Tried to disable conditional event \''..name..'\' from player '..player_index..' when it wasn\'t enabled for them!')
+      if not data.options.suppress_logging then
+        log('Tried to disable conditional event \''..name..'\' from player '..player_index..' when it wasn\'t enabled for them!')
+      end
       return
     end
     if #saved_data.players == 0 then
