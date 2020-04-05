@@ -320,7 +320,6 @@ local function setup_remote()
     )
   end
   translation.retranslate_all_event = remote.call('railualib_translation', 'retranslate_all_event')
-  log(translation.start_event..' | '..translation.finish_event..' | '..translation.canceled_event..' | '..translation.retranslate_all_event)
 end
 
 -- register conditional events
