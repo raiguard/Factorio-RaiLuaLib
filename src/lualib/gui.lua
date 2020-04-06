@@ -65,6 +65,9 @@ local function generate_handlers(t, event_string, event_groups)
         -- shortcut syntax: key is a defines.events or a custom-input name, value is just the handler
         handler_data[new_string] = {id=defines.events[k] or k, handler=v, group=table.deepcopy(event_groups)}
       elseif v.handler then
+        if not v.id then
+          v.id = defines.events[k] or k
+        end
         v.group = table.deepcopy(event_groups)
         handler_data[new_string] = v
       else

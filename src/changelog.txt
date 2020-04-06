@@ -2,6 +2,7 @@
 Version: 0.2.3
 Date: ????
   Changes:
+    - Omitting ID from a GUI handler table will cause the module to use the key as a defines.events or a custom-input
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.2
 Date: 2020-04-03
