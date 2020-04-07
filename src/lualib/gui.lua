@@ -1,6 +1,6 @@
 -- -------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- RAILUALIB GUI MODULE
--- GUI templating and event registration
+-- GUI templating and event registration.
 
 -- dependencies
 local event = require('__RaiLuaLib__.lualib.event')
@@ -94,11 +94,9 @@ end)
 local function recursive_build(parent, t, output, filters, player_index)
   -- load template
   if t.template then
-    local new_t = template_lookup[t.template]
-    for k,v in pairs(t) do
-      new_t[k] = v
+    for k,v in pairs(template_lookup[t.template]) do
+      t[k] = t[k] or v
     end
-    t = new_t
   end
   local elem
   -- special logic if this is a tab-and-content

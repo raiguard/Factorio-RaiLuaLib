@@ -170,7 +170,6 @@ end)
 script.on_configuration_changed(function(e)
   -- module migrations
   if script.active_mods['RaiLuaLib'] ~= global.__lualib.__version then
-    log('Running lualib event module migrations')
     migration.run(global.__lualib.__version or '0.1.0', {
       ['0.2.0'] = function()
         -- convert all GUI filters to like-key -> value

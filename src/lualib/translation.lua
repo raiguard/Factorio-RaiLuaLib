@@ -1,6 +1,6 @@
 -- -------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- RAILUALIB TRANSLATION MODULE
--- Requests and organizes translations for localised strings
+-- Requests and organizes translations for localised strings.
 
 -- dependencies
 local event = require('__RaiLuaLib__.lualib.event')
@@ -96,7 +96,7 @@ local function sort_translated_string(e)
             -- add to lookup table
             data.lookup[string_lower(result)] = internal_names
             -- add to sorted results table
-            data.sorted_translations[#data.sorted_translations+1] = data.lowercase_translations and string_lower(result) or result
+            data.sorted_translations[#data.sorted_translations+1] = data.lowercase_sorted_translations and string_lower(result) or result
           end
 
           -- for every internal name that this string applies do
@@ -209,7 +209,7 @@ function translation.start(player, dictionary_name, data, options)
     registry_index = registry_index,
     registry_index_size = table_size(registry_index), -- used to determine when the translation has finished
     -- options
-    lowercase_translations = options.lowercase_translations,
+    lowercase_sorted_translations = options.lowercase_sorted_translations,
     include_failed_translations = options.include_failed_translations,
     -- output
     lookup = {},

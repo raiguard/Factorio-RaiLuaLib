@@ -7,7 +7,7 @@ if global.__lualib and global.__lualib.event and not global.__lualib.event.condi
     -- copy data
     local data = table.deepcopy(t)
     -- remove IDs - they are no longer stored here
-    t.id = nil
+    data.id = nil
     -- add to registry
     new_data.conditional_events[n] = data
     -- add player references
