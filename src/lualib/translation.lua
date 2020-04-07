@@ -94,10 +94,9 @@ local function sort_translated_string(e)
           -- do this only if the result will be the same for all internal names
           if success then
             -- add to lookup table
-            data.lookup[result] = internal_names
-            data.lookup_lower[string_lower(result)] = internal_names
+            data.lookup[string_lower(result)] = internal_names
             -- add to sorted results table
-            data.sorted_translations[#data.sorted_translations+1] = data.lowercase_sorted_translations and string_lower(result) or result
+            data.sorted_translations[#data.sorted_translations+1] = data.lowercase_translations and string_lower(result) or result
           end
 
           -- for every internal name that this string applies do
@@ -114,9 +113,6 @@ local function sort_translated_string(e)
                 data.lookup[result] = {internal}
               end
               data.sorted_translations[#data.sorted_translations+1] = result
-            -- convert to lowercase if the option is active and the translation succeeded
-            elseif data.convert_to_lowercase then
-              result = string_lower(result)
             end
             -- add to translations table
             if data.translations[internal] then
@@ -136,7 +132,7 @@ local function sort_translated_string(e)
           player_data.active_translations_count = player_data.active_translations_count - 1
           -- raise finished event with the output tables
           event.raise(translation.finish_event, {player_index=e.player_index, dictionary_name=dictionary_name, lookup=data.lookup,
-            lookup_lower=data.lookup_lower, sorted_translations=data.sorted_translations, translations=data.translations})
+            sorted_translations=data.sorted_translations, translations=data.translations})
           -- remove from active translations table
           player_data.active_translations[dictionary_name] = nil
 
@@ -213,11 +209,10 @@ function translation.start(player, dictionary_name, data, options)
     registry_index = registry_index,
     registry_index_size = table_size(registry_index), -- used to determine when the translation has finished
     -- options
-    lowercase_sorted_translations = options.lowercase_sorted_translations,
+    lowercase_translations = options.lowercase_translations,
     include_failed_translations = options.include_failed_translations,
     -- output
     lookup = {},
-    lookup_lower = {},
     sorted_translations = {},
     translations = {}
   }
