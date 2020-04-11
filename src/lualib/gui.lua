@@ -3,8 +3,8 @@
 -- GUI templating and event registration.
 
 -- dependencies
-local event = require('__RaiLuaLib__.lualib.event')
-local util = require('__core__.lualib.util')
+local event = require("__RaiLuaLib__.lualib.event")
+local util = require("__core__.lualib.util")
 
 -- locals
 local string_gmatch = string.gmatch
@@ -44,12 +44,12 @@ templates.extend = extend_table
 -- generate one-dimensional template lookup table
 local function generate_template_lookup(t, template_string)
   for k,v in pairs(t) do
-    if k ~= 'extend' and type(v) == 'table' then
+    if k ~= "extend" and type(v) == "table" then
       local new_string = template_string..k
       if v.type then
         template_lookup[new_string] = v
       else
-        generate_template_lookup(v, new_string..'.')
+        generate_template_lookup(v, new_string..".")
       end
     end
   end
@@ -59,9 +59,9 @@ end
 local function generate_handlers(t, event_string, event_groups)
   event_groups[#event_groups+1] = event_string
   for k,v in pairs(t) do
-    if k ~= 'extend' then
-      local new_string = event_string..'.'..k
-      if type(v) == 'function' then
+    if k ~= "extend" then
+      local new_string = event_string.."."..k
+      if type(v) == "function" then
         -- shortcut syntax: key is a defines.events or a custom-input name, value is just the handler
         handler_data[new_string] = {id=defines.events[k] or k, handler=v, group=table.deepcopy(event_groups)}
       elseif v.handler then
@@ -79,11 +79,11 @@ local function generate_handlers(t, event_string, event_groups)
 end
 
 -- create template lookup and register conditional GUI handlers
-event.register({'on_init_postprocess', 'on_load_postprocess'}, function(e)
+event.register({"on_init_postprocess", "on_load_postprocess"}, function(e)
   -- construct template lookup table
-  generate_template_lookup(templates, '')
+  generate_template_lookup(templates, "")
   -- create and register conditional handlers for the GUI events
-  generate_handlers(handlers, 'gui', {})
+  generate_handlers(handlers, "gui", {})
   event.register_conditional(handler_data)
 end)
 
@@ -100,7 +100,7 @@ local function recursive_build(parent, t, output, filters, player_index)
   end
   local elem
   -- special logic if this is a tab-and-content
-  if t.type == 'tab-and-content' then
+  if t.type == "tab-and-content" then
     local tab, content
     output, filters, tab = recursive_build(parent, t.tab, output, filters, player_index)
     output, filters, content = recursive_build(parent, t.content, output, filters, player_index)
@@ -123,14 +123,14 @@ local function recursive_build(parent, t, output, filters, player_index)
     -- register handlers
     if t.handlers then
       local elem_index = elem.index
-      local name = 'gui.'..t.handlers
+      local name = "gui."..t.handlers
       local group = event.conditional_event_groups[name]
-      if not group then error('Invalid GUI event group: '..name) end
+      if not group then error("Invalid GUI event group: "..name) end
         -- check if this event group was already enabled
         if event.is_enabled(group[1], player_index) then
           -- append the GUI filters to include this element
           for i=1,#group do
-            event.update_gui_filters(group[i], player_index, elem_index, 'add')
+            event.update_gui_filters(group[i], player_index, elem_index, "add")
             if filters[name] then
               filters[name][elem_index] = elem_index
             else
@@ -183,7 +183,7 @@ end
 --       to_destroy[#to_destroy+1] = elem
 --     else
 --       for k,v in pairs(elem_t.mods or {}) do
---         if k ~= 'children' then
+--         if k ~= "children" then
 --           elem[k] = v
 --         end
 --       end

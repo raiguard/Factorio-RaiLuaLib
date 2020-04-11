@@ -1,4 +1,4 @@
-local util = require('__core__.lualib.util')
+local util = require("__core__.lualib.util")
 
 if global.__lualib and global.__lualib.event and not global.__lualib.event.conditional_events then
   -- migrate conditional event table to new format

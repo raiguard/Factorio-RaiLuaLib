@@ -3,7 +3,7 @@
 -- Event registration, conditional event management, GUI event filtering.
 
 -- dependencies
-local migration = require('__RaiLuaLib__.lualib.migration')
+local migration = require("__RaiLuaLib__.lualib.migration")
 
 -- locals
 local string_find = string.find
@@ -39,7 +39,7 @@ local function dispatch_event(e)
   end
   -- error checking
   if not events[id] then
-    error('Event is registered but has no handlers!')
+    error("Event is registered but has no handlers!")
   end
   -- for later use
   local elem = e.element
@@ -51,7 +51,7 @@ local function dispatch_event(e)
     -- check if any userdata has gone invalid since last iteration
     if not options.skip_validation then
       for _,v in pairs(e) do
-        if type(v) == 'table' and v.__self and not v.valid then
+        if type(v) == "table" and v.__self and not v.valid then
           return
         end
       end
@@ -60,7 +60,7 @@ local function dispatch_event(e)
     local filters = t.gui_filters
     if filters then
       if not elem then
-        log('Static event '..id..' has GUI filters but no GUI element, skipping!')
+        log("Static event "..id.." has GUI filters but no GUI element, skipping!")
         goto continue
       end
       if filters[elem.index] or filters[elem.name] then
@@ -69,7 +69,7 @@ local function dispatch_event(e)
         local name = elem.name
         for _,filter in pairs(filters) do
           -- check all string GUI filters to see if they partially match
-          if type(filter) == 'string' and string_find(name, filter) then
+          if type(filter) == "string" and string_find(name, filter) then
             goto call_handler
           end
         end
@@ -80,7 +80,7 @@ local function dispatch_event(e)
     for name,_ in pairs(t.conditional_names) do
       has_name = true
       local con_data = con_registry[name]
-      if not con_data then error('Conditional event \''..name..'\' has been raised, but has no data!') end
+      if not con_data then error("Conditional event ["..name.."] has been raised, but has no data!") end
       -- if con_data is true, then skip all checks and just call the handler
       if con_data == true then
         goto call_handler
@@ -102,13 +102,13 @@ local function dispatch_event(e)
                   local elem_name = elem.name
                   for _,filter in pairs(player_filters) do
                     -- check all string GUI filters to see if they partially match
-                    if type(filter) == 'string' and string_find(elem_name, filter) then
+                    if type(filter) == "string" and string_find(elem_name, filter) then
                       goto call_handler
                     end
                   end
                 end
               else
-                log('Conditional event '..name..' has GUI filters but no GUI element, skipping!')
+                log("Conditional event "..name.." has GUI filters but no GUI element, skipping!")
               end
             else
               goto call_handler
@@ -138,7 +138,7 @@ end
 
 script.on_init(function()
   global.__lualib = {
-    __version = script.active_mods['RaiLuaLib'], -- current version
+    __version = script.active_mods["RaiLuaLib"], -- current version
     event = {conditional_events={}, players={}}
   }
   -- dispatch events
@@ -169,9 +169,9 @@ end)
 
 script.on_configuration_changed(function(e)
   -- module migrations
-  if script.active_mods['RaiLuaLib'] ~= global.__lualib.__version then
-    migration.run(global.__lualib.__version or '0.1.0', {
-      ['0.2.0'] = function()
+  if script.active_mods["RaiLuaLib"] ~= global.__lualib.__version then
+    migration.run(global.__lualib.__version or "0.1.0", {
+      ["0.2.0"] = function()
         -- convert all GUI filters to like-key -> value
         for _,con_data in pairs(global.__lualib.event.conditional_events) do
           for i,filters in pairs(con_data.gui_filters) do
@@ -190,7 +190,7 @@ script.on_configuration_changed(function(e)
     t.handler(e)
   end
   -- update lualib version
-  global.__lualib.__version = script.active_mods['RaiLuaLib']
+  global.__lualib.__version = script.active_mods["RaiLuaLib"]
 end)
 
 -- -----------------------------------------------------------------------------
@@ -204,7 +204,7 @@ local bootstrap_events = {on_init=true, on_init_postprocess=true, on_load=true, 
 function event.register(id, handler, gui_filters, options, conditional_name)
   options = options or {}
   -- register handler
-  if type(id) ~= 'table' then id = {id} end
+  if type(id) ~= "table" then id = {id} end
   for _,n in pairs(id) do
     -- create event registry if it doesn't exist
     if not events[n] then
@@ -214,7 +214,7 @@ function event.register(id, handler, gui_filters, options, conditional_name)
     -- create master handler if not already created
     if not bootstrap_events[n] then
       if #registry == 0 then
-        if type(n) == 'number' and n < 0 then
+        if type(n) == "number" and n < 0 then
           script.on_nth_tick(-n, dispatch_event)
         else
           script.on_event(n, dispatch_event)
@@ -235,7 +235,7 @@ function event.register(id, handler, gui_filters, options, conditional_name)
     -- format gui filters
     local filters
     if gui_filters then
-      if type(gui_filters) ~= 'table' then
+      if type(gui_filters) ~= "table" then
         gui_filters = {gui_filters}
       end
       filters = {}
@@ -262,7 +262,7 @@ end
 function event.register_conditional(data)
   for n,t in pairs(data) do
     if conditional_events[n] then
-      error('Duplicate conditional event: '..n)
+      error("Duplicate conditional event: "..n)
     end
     t.options = t.options or {}
     -- add to conditional events table
@@ -270,7 +270,7 @@ function event.register_conditional(data)
     -- add to group lookup
     local groups = t.group
     if groups then
-      if type(groups) ~= 'table' then groups = {groups} end
+      if type(groups) ~= "table" then groups = {groups} end
       for i=1,#groups do
         local group = conditional_event_groups[groups[i]]
         if group then
@@ -287,7 +287,7 @@ end
 function event.enable(name, player_index, gui_filters, reregister)
   local data = conditional_events[name]
   if not data then
-    error('Conditional event \''..name..'\' was not registered and has no data!')
+    error("Conditional event ["..name.."] was not registered and has no data!")
   end
   local global_data = global.__lualib.event
   local saved_data = global_data.conditional_events[name]
@@ -295,13 +295,13 @@ function event.enable(name, player_index, gui_filters, reregister)
   if saved_data then
     -- update existing data / add this player
     if player_index then
-      if saved_data == true then error('Tried to add a player to a global conditional event!') end
+      if saved_data == true then error("Tried to add a player to a global conditional event!") end
       local player_lookup = global_data.players[player_index]
       -- check if they're already registered
       if player_lookup and player_lookup[name] then
         -- don't do anything
         if not data.options.suppress_logging then
-          log('Tried to re-register conditional event \''..name..'\' for player '..player_index..', skipping!')
+          log("Tried to re-register conditional event ["..name.."] for player "..player_index..", skipping!")
         end
         return
       else
@@ -309,7 +309,7 @@ function event.enable(name, player_index, gui_filters, reregister)
       end
     elseif not reregister then
       if not data.options.suppress_logging then
-        log('Conditional event \''..name..'\' was already registered, skipping!')
+        log("Conditional event ["..name.."] was already registered, skipping!")
       end
       return
     end
@@ -325,7 +325,7 @@ function event.enable(name, player_index, gui_filters, reregister)
   end
   -- nest GUI filters into an array if they're not already
   if gui_filters then
-    if type(gui_filters) ~= 'table' then
+    if type(gui_filters) ~= "table" then
       gui_filters = {gui_filters}
     end
   end
@@ -356,13 +356,13 @@ end
 function event.disable(name, player_index)
   local data = conditional_events[name]
   if not data then
-    error('Tried to disable conditional event \''..name..'\', which does not exist!')
+    error("Tried to disable conditional event ["..name.."], which does not exist!")
   end
   local global_data = global.__lualib.event
   local saved_data = global_data.conditional_events[name]
   if not saved_data then
     if not data.options.suppress_logging then
-      log('Tried to disable conditional event \''..name..'\', which is not enabled!')
+      log("Tried to disable conditional event ["..name.."], which is not enabled!")
     end
     return
   end
@@ -387,7 +387,7 @@ function event.disable(name, player_index)
       end
     else
       if not data.options.suppress_logging then
-        log('Tried to disable conditional event \''..name..'\' from player '..player_index..' when it wasn\'t enabled for them!')
+        log("Tried to disable conditional event ["..name.."] from player "..player_index.." when it wasn't enabled for them!")
       end
       return
     end
@@ -398,7 +398,7 @@ function event.disable(name, player_index)
       return
     end
   else
-    if type(saved_data) == 'table' then
+    if type(saved_data) == "table" then
       -- remove from all player lookup tables
       local players = global_data.players
       for i=1,#saved_data.players do
@@ -409,12 +409,12 @@ function event.disable(name, player_index)
   end
   -- deregister handler
   local id = data.id
-  if type(id) ~= 'table' then id = {id} end
+  if type(id) ~= "table" then id = {id} end
   for _,n in pairs(id) do
     local registry = events[n]
     -- error checking
     if not registry or #registry == 0 then
-      log('Tried to deregister an unregistered event of id: '..n)
+      log("Tried to deregister an unregistered event of id: "..n)
       return
     end
     for i,t in ipairs(registry) do
@@ -431,7 +431,7 @@ function event.disable(name, player_index)
     end
     -- de-register the master handler if it's no longer needed
     if #registry == 0 then
-      if type(n) == 'number' and n < 0 then
+      if type(n) == "number" and n < 0 then
         script.on_nth_tick(math.abs(n), nil)
       else
         script.on_event(n, nil)
@@ -444,7 +444,7 @@ end
 -- enables a group of conditional events
 function event.enable_group(group, player_index, gui_filters)
   local group_events = conditional_event_groups[group]
-  if not group_events then error('Group \''..group..'\' has no handlers!') end
+  if not group_events then error("Group ["..group.."] has no handlers!") end
   for i=1,#group_events do
     event.enable(group_events[i], player_index, gui_filters)
   end
@@ -453,7 +453,7 @@ end
 -- disables a group of conditional events
 function event.disable_group(group, player_index)
   local group_events = conditional_event_groups[group]
-  if not group_events then error('Group \''..group..'\' has no handlers!') end
+  if not group_events then error("Group ["..group.."] has no handlers!") end
   for i=1,#group_events do
     event.disable(group_events[i], player_index)
   end
@@ -464,15 +464,15 @@ end
 
 -- bootstrap events
 function event.on_init(handler, options)
-  return event.register('on_init', handler, nil, options)
+  return event.register("on_init", handler, nil, options)
 end
 
 function event.on_load(handler, options)
-  return event.register('on_load', handler, nil, options)
+  return event.register("on_load", handler, nil, options)
 end
 
 function event.on_configuration_changed(handler, options)
-  return event.register('on_configuration_changed', handler, nil, options)
+  return event.register("on_configuration_changed", handler, nil, options)
 end
 
 function event.on_nth_tick(nthTick, handler, options)
@@ -497,7 +497,7 @@ end
 
 -- set or remove event filters
 function event.set_filters(id, filters)
-  if type(id) ~= 'table' then id = {id} end
+  if type(id) ~= "table" then id = {id} end
   for _,n in pairs(id) do
     script.set_event_filter(n, filters)
   end
@@ -518,25 +518,25 @@ end
 -- saves a custom event ID
 function event.save_id(name, id)
   if custom_id_registry[name] then
-    log('Overwriting entry in custom event registry: '..name)
+    log("Overwriting entry in custom event registry: "..name)
   end
   custom_id_registry[name] = id
 end
 
 -- updates the GUI filters for the given conditional event
 function event.update_gui_filters(name, player_index, filters, mode)
-  mode = mode or 'overwrite'
-  if type(filters) ~= 'table' then
+  mode = mode or "overwrite"
+  if type(filters) ~= "table" then
     filters = {filters}
   end
   local con_data = global.__lualib.event.conditional_events[name]
   if not con_data then
-    error('Tried to update GUI filters for event ['..name..'], which is not enabled!')
+    error("Tried to update GUI filters for event ["..name.."], which is not enabled!")
   end
 
   local filters_table = con_data.gui_filters
 
-  if mode == 'overwrite' then
+  if mode == "overwrite" then
     local t = {}
     for _,filter in pairs(filters) do
       t[filter] = filter
@@ -550,11 +550,11 @@ function event.update_gui_filters(name, player_index, filters, mode)
       player_filters = filters_table[player_index]
     end
     -- modify filters
-    if mode == 'add' then -- add each one
+    if mode == "add" then -- add each one
       for _,filter in pairs(filters) do
         player_filters[filter] = filter
       end
-    elseif mode == 'remove' then -- remove each one
+    elseif mode == "remove" then -- remove each one
       for _,filter in pairs(filters) do
         player_filters[filter] = nil
       end
@@ -573,7 +573,7 @@ end
 function event.get_gui_filters(name, player_index)
   local con_data = global.__lualib.event.conditional_events[name]
   if not con_data then
-    error('Tried to retrieve GUI filters for conditional event ['..name..'], which is not enabled!')
+    error("Tried to retrieve GUI filters for conditional event ["..name.."], which is not enabled!")
   end
   return con_data.gui_filters[player_index]
 end

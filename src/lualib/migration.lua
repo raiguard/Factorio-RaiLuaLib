@@ -6,12 +6,12 @@
 local migration = {}
 
 -- locals
-local string_split = require('__core__.lualib.util').split
+local string_split = require("__core__.lualib.util").split
 
 -- returns true if v2 is newer than v1, false if otherwise
 function migration.compare_versions(v1, v2)
-  local v1_split = string_split(v1, '.')
-  local v2_split = string_split(v2, '.')
+  local v1_split = string_split(v1, ".")
+  local v2_split = string_split(v2, ".")
   for i=1,#v1_split do
     if v1_split[i] < v2_split[i] then
       return true
