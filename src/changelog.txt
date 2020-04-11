@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.4
-Date: ????
+Date: 2020-04-11
   Changes:
     - Switched to double quotes everywhere
     - translation:
