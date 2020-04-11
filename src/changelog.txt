@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.4
+Date: ????
+  Changes:
+    - Switched to double quotes everywhere
+    - translation:
+      - Redesigned the /retranslate-all-dictionaries command registration logic to hopefully fix desyncs related to mod load order
+      - Trying to cancel a translation that isn't running will no longer throw an error
+---------------------------------------------------------------------------------------------------
 Version: 0.2.3
 Date: 2020-04-07
   Changes:
