@@ -236,6 +236,7 @@ function translation.cancel(player, dictionary_name)
     log("Tried to cancel a translation that isn't running!")
     return
   end
+  log("Canceling translation of ["..dictionary_name.."] for player ["..player.name.."]")
   
   -- remove this dictionary from the string registry
   local string_registry = player_data.string_registry
@@ -301,24 +302,6 @@ local function setup_player(index)
   }
 end
 
--- remote interface for retranslating all dictionaries
-local function setup_remote()
-  -- any mods using this will have a dependency, so the interface is guaranteed to exist by the time other mods need it
-  if script.mod_name == "RaiLuaLib" then
-    remote.add_interface("railualib_translation", {
-      retranslate_all_event = function() return event.get_id("retranslate_all_event") end,
-    })
-    commands.add_command(
-      "retranslate-all-dictionaries",
-      "- retranslates all of your personal dictionaries",
-      function(e)
-        event.raise(event.get_id("retranslate_all_event"), {player_index=e.player_index})
-      end
-    )
-  end
-  translation.retranslate_all_event = remote.call("railualib_translation", "retranslate_all_event")
-end
-
 -- register conditional events
 event.register_conditional{
   translation_translate_batch = {id=defines.events.on_tick, handler=translate_batch, options={skip_validation=true, suppress_logging=true}},
@@ -335,11 +318,11 @@ event.on_init(function()
   for _,p in pairs(game.connected_players) do
     setup_player(p.index)
   end
-  setup_remote()
+  translation.retranslate_all_event = remote.call("railualib_translation", "retranslate_all_event")
 end)
 
 event.on_load(function()
-  setup_remote()
+  translation.retranslate_all_event = remote.call("railualib_translation", "retranslate_all_event")
 end)
 
 -- set up player table
