@@ -233,7 +233,8 @@ function translation.cancel(player, dictionary_name)
   local player_data = __translation.players[player.index]
   local translation_data = player_data.active_translations[dictionary_name]
   if not translation_data then
-    error("Tried to cancel a translation that isn't running!")
+    log("Tried to cancel a translation that isn't running!")
+    return
   end
   
   -- remove this dictionary from the string registry
@@ -300,9 +301,10 @@ local function setup_player(index)
   }
 end
 
--- remote interface for cross-mod sync
+-- remote interface for retranslating all dictionaries
 local function setup_remote()
-  if not remote.interfaces["railualib_translation"] then -- create the interface
+  -- any mods using this will have a dependency, so the interface is guaranteed to exist by the time other mods need it
+  if script.mod_name == "RaiLuaLib" then
     remote.add_interface("railualib_translation", {
       retranslate_all_event = function() return event.get_id("retranslate_all_event") end,
     })
@@ -341,17 +343,21 @@ event.on_load(function()
 end)
 
 -- set up player table
--- the player's table will be completely destroyed when they exit, so we create it in on_player_joined_game
-event.on_player_joined_game(function(e)
-  -- if we load a singleplayer game and become someone else, we must first cancel any ongoing translations that they were doing
-  if global.__lualib.translation.players[e.player_index] then
+event.on_player_created(function(e)
+  setup_player(e.player_index)
+end, nil, {insert_at=1})
+
+-- destroy player table
+event.on_pre_player_removed(function(e)
+  local player_translation = global.__lualib.translation.players[e.player_index]
+  if player_translation.active_translations_count > 0 then
     translation.cancel_all_for_player(game.get_player(e.player_index))
   end
-  setup_player(e.player_index)
-end, nil, {insert_at=1}) -- guarantee that this will be run first to avoid crashes later on
+  global.__lualib.translation.players[e.player_index] = nil
+end)
 
 -- cancel all translations for the player when they leave
-event.on_player_left_game(function(e)
+event.on_pre_player_left_game(function(e)
   local player_translation = global.__lualib.translation.players[e.player_index]
   if player_translation.active_translations_count > 0 then
     translation.cancel_all_for_player(game.get_player(e.player_index))
