@@ -1,7 +1,9 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.5
 Date: ????
-  Changes:
+  Bugfixes:
+    - translation:
+      - Fixed that data tables were only being created for connected players when adding the mod to an existing save
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.4
 Date: 2020-04-11
