@@ -315,7 +315,7 @@ event.on_init(function()
     active_translations_count = 0,
     players = {}
   }
-  for _,p in pairs(game.connected_players) do
+  for _,p in pairs(game.players) do
     setup_player(p.index)
   end
   translation.retranslate_all_event = remote.call("railualib_translation", "retranslate_all_event")
