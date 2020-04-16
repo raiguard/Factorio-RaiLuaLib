@@ -4,7 +4,7 @@
 
 -- dependencies
 local event = require("__RaiLuaLib__.lualib.event")
-local util = require("__core__.lualib.util")
+local migration = require("__RaiLuaLib__.lualib.migration")
 
 -- locals
 local math_floor = math.floor
@@ -140,10 +140,8 @@ local function sort_translated_string(e)
           if player_data.active_translations_count == 0 then
             -- deregister this event for this player
             event.disable("translation_sort_result", e.player_index)
-            -- reset for the next time stuff is translated
-            player_data.next_index = 0
-            player_data.strings = {}
-            player_data.strings_len = 0
+            -- remove player's translation table
+            __translation.players[e.player_index] = nil
           end
         end
       else
@@ -164,8 +162,19 @@ function translation.start(player, dictionary_name, data, options)
   local __translation = global.__lualib.translation
   local player_data = __translation.players[player.index]
 
+  -- create player table if it doesn't exist
+  if not player_data then
+    __translation.players[player.index] = {
+      active_translations = {}, -- contains data for each dictionary that is being translated
+      active_translations_count = 0, -- count of translations that this player is performing
+      next_index = 1, -- index of the next string to be translated
+      string_registry = {}, -- contains data on where a translation should be placed
+      strings = {}, -- contains the actual localised string objects to be translated
+      strings_len = 0 -- length of the strings table, for use in on_tick to avoid extraneous logic
+    }
+    player_data = __translation.players[player.index]
   -- reset if the translation is already running
-  if player_data.active_translations[dictionary_name] then
+  elseif player_data.active_translations[dictionary_name] then
     log("Cancelling and restarting translation of "..dictionary_name.." for "..player.name)
     translation.cancel(player, dictionary_name)
   end
@@ -264,10 +273,8 @@ function translation.cancel(player, dictionary_name)
     if event.is_enabled("translation_translate_batch", player.index) then
       event.disable("translation_translate_batch", player.index)
     end
-    -- reset for the next time stuff is translated
-    player_data.next_index = 0
-    player_data.strings = {}
-    player_data.strings_len = 0
+    -- remove player's translation table
+    __translation.players[player.index] = nil
   end
 end
 
@@ -290,18 +297,6 @@ function translation.cancel_all()
   end
 end
 
--- sets up the player's data table
-local function setup_player(index)
-  global.__lualib.translation.players[index] = {
-    active_translations = {}, -- contains data for each dictionary that is being translated
-    active_translations_count = 0, -- count of translations that this player is performing
-    next_index = 1, -- index of the next string to be translated
-    string_registry = {}, -- contains data on where a translation should be placed
-    strings = {}, -- contains the actual localised string objects to be translated
-    strings_len = 0 -- length of the strings table, for use in on_tick to avoid extraneous logic
-  }
-end
-
 -- register conditional events
 event.register_conditional{
   translation_translate_batch = {id=defines.events.on_tick, handler=translate_batch, options={skip_validation=true, suppress_logging=true}},
@@ -315,9 +310,6 @@ event.on_init(function()
     active_translations_count = 0,
     players = {}
   }
-  for _,p in pairs(game.players) do
-    setup_player(p.index)
-  end
   translation.retranslate_all_event = remote.call("railualib_translation", "retranslate_all_event")
 end)
 
@@ -325,24 +317,24 @@ event.on_load(function()
   translation.retranslate_all_event = remote.call("railualib_translation", "retranslate_all_event")
 end)
 
--- set up player table
-event.on_player_created(function(e)
-  setup_player(e.player_index)
-end, nil, {insert_at=1})
-
--- destroy player table
-event.on_pre_player_removed(function(e)
-  local player_translation = global.__lualib.translation.players[e.player_index]
-  if player_translation.active_translations_count > 0 then
-    translation.cancel_all_for_player(game.get_player(e.player_index))
-  end
-  global.__lualib.translation.players[e.player_index] = nil
+event.on_configuration_changed(function()
+  migration.run(global.__lualib.__version, {
+    ["0.2.6"] = function()
+      -- remove unneeded translation tables
+      local players = global.__lualib.translation.players
+      for i,t in pairs(players) do
+        if t.active_translations_count == 0 then
+          players[i] = nil
+        end
+      end
+    end
+  })
 end)
 
--- cancel all translations for the player when they leave
-event.on_pre_player_left_game(function(e)
+-- cancel all translations for the player when they leave or are removed
+event.register({defines.events.on_pre_player_left_game, defines.events.on_pre_player_removed}, function(e)
   local player_translation = global.__lualib.translation.players[e.player_index]
-  if player_translation.active_translations_count > 0 then
+  if player_translation and player_translation.active_translations_count > 0 then
     translation.cancel_all_for_player(game.get_player(e.player_index))
   end
 end)
