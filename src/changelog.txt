@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.6
-Date: ????
+Date: 2020-04-16
   Changes:
     - translation:
       - Player translation tables only exist if they're actually needed.
