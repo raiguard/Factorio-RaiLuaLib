@@ -138,7 +138,8 @@ local function sort_translated_string(e)
 
           -- check if the player is done translating
           if player_data.active_translations_count == 0 then
-            -- deregister this event for this player
+            -- deregister events from this player
+            event.disable("translation_translate_batch", e.player_index)
             event.disable("translation_sort_result", e.player_index)
             -- remove player's translation table
             __translation.players[e.player_index] = nil
