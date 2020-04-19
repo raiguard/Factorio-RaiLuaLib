@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.7
-Date: ????
+Date: 2020-04-19
   Bugfixes:
     - translation:
       - Fixed a crash when the translate batch function would happen to stop on the exact last entry in its data table.
