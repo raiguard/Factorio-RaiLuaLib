@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.8
-Date: ????
+Date: 2020-04-24
   Bugfixes:
     - event:
       - Fixed a crash when a conditional handler was removed between mod versions
