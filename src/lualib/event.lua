@@ -163,7 +163,9 @@ script.on_load(function()
   -- re-register conditional events
   local registered = global.__lualib.event.conditional_events
   for n,_ in pairs(registered) do
-    event.enable(n, nil, nil, true)
+    if conditional_events[n] then
+      event.enable(n, nil, nil, true)
+    end
   end
 end)
 

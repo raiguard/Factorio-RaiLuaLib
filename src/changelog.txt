@@ -1,19 +1,21 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.8
 Date: ????
-  Changes:
+  Bugfixes:
+    - event:
+      - Fixed a crash when a conditional handler was removed between mod versions
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.7
 Date: 2020-04-19
   Bugfixes:
     - translation:
-      - Fixed a crash when the translate batch function would happen to stop on the exact last entry in its data table.
+      - Fixed a crash when the translate batch function would happen to stop on the exact last entry in its data table
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.6
 Date: 2020-04-16
   Changes:
     - translation:
-      - Player translation tables only exist if they're actually needed.
+      - Player translation tables only exist if they're actually needed
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.5
 Date: 2020-04-12
